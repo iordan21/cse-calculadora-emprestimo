@@ -1,0 +1,4 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Tema base da activity; o Material3 real é aplicado via Jetpack Compose em ui/theme -->
+    <style name="Theme.CSE" parent="android:Theme.Material.Light.NoActionBar" />
+</resources>

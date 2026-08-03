@@ -1,0 +1,23 @@
+*.iml
+.gradle/
+/local.properties
+/.idea/
+.DS_Store
+/build/
+/captures/
+.externalNativeBuild/
+.cxx/
+local.properties
+.kotlin/
+
+# Build outputs
+app/build/
+app/release/
+*.apk
+*.aab
+
+# Android Studio navigation editor temp files
+.navigation/
+
+# IntelliJ
+*.iws

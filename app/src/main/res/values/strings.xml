@@ -1,0 +1,5 @@
+<resources>
+    <!-- Nome do App: alterado de CalculadoraPortabilidade para CSE -->
+    <string name="app_name">CSE</string>
+    <string name="app_full_name">CSE - Calculadora Simples de Empréstimo</string>
+</resources>
