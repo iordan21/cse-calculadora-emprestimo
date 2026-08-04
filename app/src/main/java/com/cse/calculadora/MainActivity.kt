@@ -37,22 +37,20 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableDoubleStateOf
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.cse.calculadora.ui.CseViewModel
+import com.cse.calculadora.ui.EmprestimoUiState
+import com.cse.calculadora.ui.MargemUiState
+import com.cse.calculadora.ui.PortabilidadeUiState
 import com.cse.calculadora.ui.theme.CSETheme
-import java.util.Calendar
-import java.util.Locale
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -71,20 +69,22 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+private const val NOME_APP = "CSE - Calculadora Simples de Empréstimo"
+
 private val titulosAbas = listOf("Portabilidade", "Margem", "Empréstimo")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CSEApp() {
-    var abaSelecionada by rememberSaveable { mutableIntStateOf(0) }
-
-    // Margem Real calculada na Aba Margem, repassada como sugestão para a Aba Empréstimo.
-    var margemRealDisponivel by rememberSaveable { mutableDoubleStateOf(0.0) }
+fun CSEApp(viewModel: CseViewModel = viewModel()) {
+    val abaSelecionada by viewModel.abaSelecionada.collectAsStateWithLifecycle()
+    val portabilidade by viewModel.portabilidade.collectAsStateWithLifecycle()
+    val margem by viewModel.margem.collectAsStateWithLifecycle()
+    val emprestimo by viewModel.emprestimo.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResourceAppName()) },
+                title = { Text(NOME_APP) },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     titleContentColor = MaterialTheme.colorScheme.onPrimary
@@ -97,45 +97,56 @@ fun CSEApp() {
                 titulosAbas.forEachIndexed { indice, titulo ->
                     Tab(
                         selected = abaSelecionada == indice,
-                        onClick = { abaSelecionada = indice },
+                        onClick = { viewModel.selecionarAba(indice) },
                         text = { Text(titulo) }
                     )
                 }
             }
 
             when (abaSelecionada) {
-                0 -> AbaPortabilidade()
-                1 -> AbaMargem(aoAtualizarMargemReal = { margemRealDisponivel = it })
-                2 -> AbaEmprestimo(margemSugerida = margemRealDisponivel)
+                0 -> AbaPortabilidade(
+                    estado = portabilidade,
+                    aoAlterarParcela = viewModel::alterarParcelaPortabilidade,
+                    aoAlterarJuros = viewModel::alterarJurosPortabilidade,
+                    aoAlterarQuantoFoi = viewModel::alterarQuantoFoi,
+                    aoAlterarQuantoResta = viewModel::alterarQuantoResta
+                )
+
+                1 -> AbaMargem(
+                    estado = margem,
+                    aoAlterarSalario = viewModel::alterarSalario,
+                    aoAlterarPercentual = viewModel::alterarPercentualMargem,
+                    aoAlterarParcela = viewModel::alterarParcelaComprometida,
+                    aoAdicionarParcela = viewModel::adicionarParcela,
+                    aoRemoverParcela = viewModel::removerParcela
+                )
+
+                2 -> AbaEmprestimo(
+                    estado = emprestimo,
+                    margemSugerida = margem.margemRealDisponivel,
+                    aoAlterarParcela = viewModel::alterarParcelaEmprestimo,
+                    aoAlterarPrazo = viewModel::alterarPrazo,
+                    aoAlterarJuros = viewModel::alterarJurosEmprestimo,
+                    aoAlternarIof = viewModel::alternarIof,
+                    aoUsarMargemSugerida = viewModel::usarMargemSugerida
+                )
             }
         }
     }
 }
-
-@Composable
-private fun stringResourceAppName(): String = "CSE - Calculadora Simples de Empréstimo"
 
 /* ---------------------------------------------------------------------- */
 /*  ABA 1: PORTABILIDADE                                                   */
 /* ---------------------------------------------------------------------- */
 
 @Composable
-fun AbaPortabilidade() {
-    var parcelaTexto by rememberSaveable { mutableStateOf("") }
-    var jurosTexto by rememberSaveable { mutableStateOf("") }
-    var quantoFoiTexto by rememberSaveable { mutableStateOf("") }
-    var quantoRestaTexto by rememberSaveable { mutableStateOf("") }
-
-    val parcela = CalculadoraUtils.parseValorDigitado(parcelaTexto)
-    val juros = CalculadoraUtils.parseValorDigitado(jurosTexto)
-    val quantoFoi = CalculadoraUtils.parseValorDigitado(quantoFoiTexto).toInt()
-    val quantoResta = CalculadoraUtils.parseValorDigitado(quantoRestaTexto).toInt()
-
-    val prazoOriginal = quantoFoi + quantoResta
-    val totalJaPago = parcela * quantoFoi
-    val terminoEstimado = calcularTerminoEstimado(quantoResta)
-    val saldoDevedor = CalculadoraUtils.calcularPortabilidade(parcela, quantoResta, juros).saldoDevedor
-
+fun AbaPortabilidade(
+    estado: PortabilidadeUiState,
+    aoAlterarParcela: (String) -> Unit,
+    aoAlterarJuros: (String) -> Unit,
+    aoAlterarQuantoFoi: (String) -> Unit,
+    aoAlterarQuantoResta: (String) -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -149,38 +160,38 @@ fun AbaPortabilidade() {
         )
 
         CampoNumerico(
-            valor = parcelaTexto,
-            aoAlterar = { parcelaTexto = CalculadoraUtils.sanitizarEntradaNumerica(it) },
+            valor = estado.parcelaTexto,
+            aoAlterar = aoAlterarParcela,
             rotulo = "Parcela (R$)"
         )
         CampoNumerico(
-            valor = jurosTexto,
-            aoAlterar = { jurosTexto = CalculadoraUtils.sanitizarEntradaNumerica(it) },
+            valor = estado.jurosTexto,
+            aoAlterar = aoAlterarJuros,
             rotulo = "Juros a.m. (%)"
         )
         CampoNumerico(
-            valor = quantoFoiTexto,
-            aoAlterar = { quantoFoiTexto = it.filter { c -> c.isDigit() } },
+            valor = estado.quantoFoiTexto,
+            aoAlterar = aoAlterarQuantoFoi,
             rotulo = "Quanto foi (x pagas)"
         )
         CampoNumerico(
-            valor = quantoRestaTexto,
-            aoAlterar = { quantoRestaTexto = it.filter { c -> c.isDigit() } },
+            valor = estado.quantoRestaTexto,
+            aoAlterar = aoAlterarQuantoResta,
             rotulo = "Quanto resta (x)"
         )
 
         Spacer(modifier = Modifier.height(8.dp))
 
         CartaoResumo(titulo = "Resumo do Contrato") {
-            LinhaResumo("Prazo Original", "$prazoOriginal parcelas")
+            LinhaResumo("Prazo Original", "${estado.prazoOriginal} parcelas")
             LinhaResumo(
                 "Total Já Pago",
-                "${CalculadoraUtils.formatarMoeda(totalJaPago)} ($quantoFoi parcelas)"
+                "${CalculadoraUtils.formatarMoeda(estado.totalJaPago)} (${estado.quantoFoi} parcelas)"
             )
-            LinhaResumo("Término Estimado", terminoEstimado)
+            LinhaResumo("Término Estimado", estado.terminoEstimado)
             LinhaResumo(
                 rotulo = "Saldo Devedor Estimado",
-                valor = CalculadoraUtils.formatarMoeda(saldoDevedor),
+                valor = CalculadoraUtils.formatarMoeda(estado.saldoDevedor),
                 corValor = MaterialTheme.colorScheme.primary,
                 destaque = true
             )
@@ -188,47 +199,19 @@ fun AbaPortabilidade() {
     }
 }
 
-/**
- * Calcula o mês/ano estimado de término do contrato, somando [quantoResta] meses
- * à data atual (ex.: "julho de 2029").
- */
-private fun calcularTerminoEstimado(quantoResta: Int): String {
-    val calendario = Calendar.getInstance()
-    calendario.add(Calendar.MONTH, quantoResta)
-
-    val formatoLocalePtBr = Locale("pt", "BR")
-    val nomeMes = calendario.getDisplayName(Calendar.MONTH, Calendar.LONG, formatoLocalePtBr)
-        ?: ""
-    val nomeMesCapitalizado = nomeMes.replaceFirstChar {
-        if (it.isLowerCase()) it.titlecase(formatoLocalePtBr) else it.toString()
-    }
-    val ano = calendario.get(Calendar.YEAR)
-    return "$nomeMesCapitalizado de $ano"
-}
-
 /* ---------------------------------------------------------------------- */
 /*  ABA 2: MARGEM (bruta x real, descontando o que já está comprometido)   */
 /* ---------------------------------------------------------------------- */
 
 @Composable
-fun AbaMargem(aoAtualizarMargemReal: (Double) -> Unit = {}) {
-    var salarioTexto by rememberSaveable { mutableStateOf("") }
-    var margemTexto by rememberSaveable { mutableStateOf("35") }
-    var parcelasTexto by rememberSaveable { mutableStateOf(listOf("")) }
-
-    val salarioBruto = CalculadoraUtils.parseValorDigitado(salarioTexto)
-    val margemPercentual = CalculadoraUtils.parseValorDigitado(margemTexto)
-    val parcelaComprometida = parcelasTexto.sumOf { CalculadoraUtils.parseValorDigitado(it) }
-
-    val margemBruta = salarioBruto * (margemPercentual / 100.0)
-    val margemReal = margemBruta - parcelaComprometida
-    val margemEstourada = margemReal < 0.0
-
-    // Repassa a Margem Real para a Aba Empréstimo assim que ela é recalculada.
-    LaunchedEffect(margemReal) {
-        aoAtualizarMargemReal(margemReal.coerceAtLeast(0.0))
-    }
-
+fun AbaMargem(
+    estado: MargemUiState,
+    aoAlterarSalario: (String) -> Unit,
+    aoAlterarPercentual: (String) -> Unit,
+    aoAlterarParcela: (Int, String) -> Unit,
+    aoAdicionarParcela: () -> Unit,
+    aoRemoverParcela: (Int) -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -242,13 +225,13 @@ fun AbaMargem(aoAtualizarMargemReal: (Double) -> Unit = {}) {
         )
 
         CampoNumerico(
-            valor = salarioTexto,
-            aoAlterar = { salarioTexto = CalculadoraUtils.sanitizarEntradaNumerica(it) },
+            valor = estado.salarioTexto,
+            aoAlterar = aoAlterarSalario,
             rotulo = "Salário Bruto (R$)"
         )
         CampoNumerico(
-            valor = margemTexto,
-            aoAlterar = { margemTexto = CalculadoraUtils.sanitizarEntradaNumerica(it) },
+            valor = estado.margemTexto,
+            aoAlterar = aoAlterarPercentual,
             rotulo = "Margem (%)"
         )
 
@@ -259,7 +242,7 @@ fun AbaMargem(aoAtualizarMargemReal: (Double) -> Unit = {}) {
             style = MaterialTheme.typography.titleLarge
         )
 
-        parcelasTexto.forEachIndexed { indice, texto ->
+        estado.parcelasTexto.forEachIndexed { indice, texto ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -267,18 +250,12 @@ fun AbaMargem(aoAtualizarMargemReal: (Double) -> Unit = {}) {
             ) {
                 CampoNumerico(
                     valor = texto,
-                    aoAlterar = { novoTexto ->
-                        parcelasTexto = parcelasTexto.toMutableList().also {
-                            it[indice] = CalculadoraUtils.sanitizarEntradaNumerica(novoTexto)
-                        }
-                    },
+                    aoAlterar = { novoTexto -> aoAlterarParcela(indice, novoTexto) },
                     rotulo = "Parcela ${indice + 1} (R$)",
                     modifier = Modifier.weight(1f)
                 )
-                if (parcelasTexto.size > 1) {
-                    IconButton(onClick = {
-                        parcelasTexto = parcelasTexto.filterIndexed { i, _ -> i != indice }
-                    }) {
+                if (estado.podeRemoverParcela) {
+                    IconButton(onClick = { aoRemoverParcela(indice) }) {
                         Icon(Icons.Filled.Close, contentDescription = "Remover parcela")
                     }
                 }
@@ -286,7 +263,7 @@ fun AbaMargem(aoAtualizarMargemReal: (Double) -> Unit = {}) {
         }
 
         OutlinedButton(
-            onClick = { parcelasTexto = parcelasTexto + "" },
+            onClick = aoAdicionarParcela,
             modifier = Modifier.fillMaxWidth()
         ) {
             Icon(Icons.Filled.Add, contentDescription = null)
@@ -297,15 +274,15 @@ fun AbaMargem(aoAtualizarMargemReal: (Double) -> Unit = {}) {
         Spacer(modifier = Modifier.height(8.dp))
 
         CartaoResumo(titulo = "Resumo da Margem") {
-            LinhaResumo("Margem Bruta", CalculadoraUtils.formatarMoeda(margemBruta))
+            LinhaResumo("Margem Bruta", CalculadoraUtils.formatarMoeda(estado.margemBruta))
             LinhaResumo(
                 "Parcela Já Comprometida",
-                "- ${CalculadoraUtils.formatarMoeda(parcelaComprometida)}"
+                "- ${CalculadoraUtils.formatarMoeda(estado.parcelaComprometida)}"
             )
             LinhaResumo(
-                rotulo = if (margemEstourada) "Margem Estourada" else "Margem Real Disponível",
-                valor = CalculadoraUtils.formatarMoeda(margemReal),
-                corValor = if (margemEstourada) {
+                rotulo = if (estado.margemEstourada) "Margem Estourada" else "Margem Real Disponível",
+                valor = CalculadoraUtils.formatarMoeda(estado.margemReal),
+                corValor = if (estado.margemEstourada) {
                     MaterialTheme.colorScheme.error
                 } else {
                     MaterialTheme.colorScheme.primary
@@ -321,20 +298,15 @@ fun AbaMargem(aoAtualizarMargemReal: (Double) -> Unit = {}) {
 /* ---------------------------------------------------------------------- */
 
 @Composable
-fun AbaEmprestimo(margemSugerida: Double = 0.0) {
-    var parcelaTexto by rememberSaveable { mutableStateOf("") }
-    var prazoTexto by rememberSaveable { mutableStateOf("84") }
-    var jurosTexto by rememberSaveable { mutableStateOf("") }
-    var iofAtivo by rememberSaveable { mutableStateOf(false) }
-
-    val parcela = CalculadoraUtils.parseValorDigitado(parcelaTexto)
-    val prazoMeses = CalculadoraUtils.parseValorDigitado(prazoTexto).toInt()
-    val juros = CalculadoraUtils.parseValorDigitado(jurosTexto)
-
-    val valorBrutoFinanciavel = CalculadoraUtils.valorPresente(parcela, prazoMeses, juros)
-    val descontoIof = valorBrutoFinanciavel * 0.03
-    val valorFinal = if (iofAtivo) valorBrutoFinanciavel - descontoIof else valorBrutoFinanciavel
-
+fun AbaEmprestimo(
+    estado: EmprestimoUiState,
+    margemSugerida: Double,
+    aoAlterarParcela: (String) -> Unit,
+    aoAlterarPrazo: (String) -> Unit,
+    aoAlterarJuros: (String) -> Unit,
+    aoAlternarIof: () -> Unit,
+    aoUsarMargemSugerida: () -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -358,55 +330,62 @@ fun AbaEmprestimo(margemSugerida: Double = 0.0) {
                     style = MaterialTheme.typography.bodyLarge,
                     modifier = Modifier.weight(1f)
                 )
-                TextButton(onClick = {
-                    parcelaTexto = CalculadoraUtils.formatarParaEdicao(margemSugerida)
-                }) {
+                TextButton(onClick = aoUsarMargemSugerida) {
                     Text("Usar")
                 }
             }
         }
 
         CampoNumerico(
-            valor = parcelaTexto,
-            aoAlterar = { parcelaTexto = CalculadoraUtils.sanitizarEntradaNumerica(it) },
+            valor = estado.parcelaTexto,
+            aoAlterar = aoAlterarParcela,
             rotulo = "Parcela Disponível (R$)"
         )
         CampoNumerico(
-            valor = prazoTexto,
-            aoAlterar = { prazoTexto = it.filter { c -> c.isDigit() } },
+            valor = estado.prazoTexto,
+            aoAlterar = aoAlterarPrazo,
             rotulo = "Prazo (meses)"
         )
         CampoNumerico(
-            valor = jurosTexto,
-            aoAlterar = { jurosTexto = CalculadoraUtils.sanitizarEntradaNumerica(it) },
+            valor = estado.jurosTexto,
+            aoAlterar = aoAlterarJuros,
             rotulo = "Juros a.m. (%)"
         )
 
         Spacer(modifier = Modifier.height(4.dp))
 
         OutlinedButton(
-            onClick = { iofAtivo = !iofAtivo },
+            onClick = aoAlternarIof,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text(if (iofAtivo) "Modo atual: Descontar IOF (toque para usar Valor Bruto)" else "Modo atual: Valor Bruto (toque para descontar IOF)")
+            Text(
+                if (estado.iofAtivo) {
+                    "Modo atual: Descontar IOF (toque para usar Valor Bruto)"
+                } else {
+                    "Modo atual: Valor Bruto (toque para descontar IOF)"
+                }
+            )
         }
 
         Spacer(modifier = Modifier.height(8.dp))
 
         CartaoResumo(titulo = "Resumo do Empréstimo") {
-            LinhaResumo("Valor Bruto Financiável", CalculadoraUtils.formatarMoeda(valorBrutoFinanciavel))
+            LinhaResumo(
+                "Valor Bruto Financiável",
+                CalculadoraUtils.formatarMoeda(estado.valorBrutoFinanciavel)
+            )
 
-            if (iofAtivo) {
+            if (estado.iofAtivo) {
                 LinhaResumo(
                     rotulo = "Desconto de IOF Estimado (~3%)",
-                    valor = "- ${CalculadoraUtils.formatarMoeda(descontoIof)}",
+                    valor = "- ${CalculadoraUtils.formatarMoeda(estado.descontoIof)}",
                     corValor = MaterialTheme.colorScheme.error
                 )
             }
 
             LinhaResumo(
-                rotulo = if (iofAtivo) "Valor Líquido na Conta" else "Valor Máximo Liberado",
-                valor = CalculadoraUtils.formatarMoeda(valorFinal),
+                rotulo = if (estado.iofAtivo) "Valor Líquido na Conta" else "Valor Máximo Liberado",
+                valor = CalculadoraUtils.formatarMoeda(estado.valorFinal),
                 corValor = MaterialTheme.colorScheme.primary,
                 destaque = true
             )
@@ -478,7 +457,7 @@ private fun LinhaResumo(
     ) {
         Text(
             text = rotulo,
-            style = if (destaque) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.bodyLarge,
+            style = MaterialTheme.typography.bodyLarge,
             fontWeight = if (destaque) FontWeight.SemiBold else FontWeight.Normal,
             modifier = Modifier.weight(1f)
         )
