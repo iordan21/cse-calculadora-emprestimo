@@ -1,6 +1,7 @@
 package com.cse.calculadora
 
 import java.text.NumberFormat
+import java.util.Calendar
 import java.util.Locale
 import kotlin.math.pow
 
@@ -18,7 +19,12 @@ data class ResultadoSimulacao(
  */
 object CalculadoraUtils {
 
-    private val formatoMoedaBr: NumberFormat = NumberFormat.getCurrencyInstance(Locale("pt", "BR"))
+    /** Alíquota de IOF estimada aplicada sobre o valor bruto financiável. */
+    const val ALIQUOTA_IOF = 0.03
+
+    private val localePtBr = Locale("pt", "BR")
+
+    private val formatoMoedaBr: NumberFormat = NumberFormat.getCurrencyInstance(localePtBr)
 
     /**
      * Valor presente de uma série de parcelas fixas — fórmula da Tabela Price.
@@ -39,6 +45,21 @@ object CalculadoraUtils {
         return ResultadoSimulacao(
             saldoDevedor = valorPresente(parcelaAtual, prazoResta, taxaJurosMensal)
         )
+    }
+
+    /**
+     * Mês/ano estimado de término do contrato, somando [quantoResta] meses
+     * à data atual (ex.: "Julho de 2029").
+     */
+    fun calcularTerminoEstimado(quantoResta: Int): String {
+        val calendario = Calendar.getInstance()
+        calendario.add(Calendar.MONTH, quantoResta)
+
+        val nomeMes = calendario.getDisplayName(Calendar.MONTH, Calendar.LONG, localePtBr) ?: ""
+        val nomeMesCapitalizado = nomeMes.replaceFirstChar {
+            if (it.isLowerCase()) it.titlecase(localePtBr) else it.toString()
+        }
+        return "$nomeMesCapitalizado de ${calendario.get(Calendar.YEAR)}"
     }
 
     fun formatarMoeda(valor: Double): String = formatoMoedaBr.format(valor)
