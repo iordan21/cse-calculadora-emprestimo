@@ -1,107 +1,129 @@
 package com.cse.calculadora.ui
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import com.cse.calculadora.CalculadoraUtils
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 
 /**
  * Dono do estado das três abas do CSE.
  *
- * Fica no escopo da Activity, então o que foi digitado sobrevive à troca de aba
- * e à rotação da tela. Também é o que permite a aba Empréstimo ler a margem
- * calculada na aba Margem sem que uma composable precise avisar a outra.
+ * O estado vive no [SavedStateHandle], então sobrevive à troca de aba, à rotação
+ * da tela e também à morte do processo — quando o sistema mata o app em segundo
+ * plano para liberar memória, o que já tinha sido digitado volta.
+ *
+ * Também é o que permite a aba Empréstimo ler a margem calculada na aba Margem
+ * sem que uma composable precise avisar a outra.
  */
-class CseViewModel : ViewModel() {
+class CseViewModel(private val estadoSalvo: SavedStateHandle) : ViewModel() {
 
-    private val _abaSelecionada = MutableStateFlow(0)
-    val abaSelecionada: StateFlow<Int> = _abaSelecionada.asStateFlow()
+    val abaSelecionada: StateFlow<Int> =
+        estadoSalvo.getStateFlow(CHAVE_ABA, 0)
 
-    private val _portabilidade = MutableStateFlow(PortabilidadeUiState())
-    val portabilidade: StateFlow<PortabilidadeUiState> = _portabilidade.asStateFlow()
+    val portabilidade: StateFlow<PortabilidadeUiState> =
+        estadoSalvo.getStateFlow(CHAVE_PORTABILIDADE, PortabilidadeUiState())
 
-    private val _margem = MutableStateFlow(MargemUiState())
-    val margem: StateFlow<MargemUiState> = _margem.asStateFlow()
+    val margem: StateFlow<MargemUiState> =
+        estadoSalvo.getStateFlow(CHAVE_MARGEM, MargemUiState())
 
-    private val _emprestimo = MutableStateFlow(EmprestimoUiState())
-    val emprestimo: StateFlow<EmprestimoUiState> = _emprestimo.asStateFlow()
+    val emprestimo: StateFlow<EmprestimoUiState> =
+        estadoSalvo.getStateFlow(CHAVE_EMPRESTIMO, EmprestimoUiState())
 
     fun selecionarAba(indice: Int) {
-        _abaSelecionada.value = indice
+        estadoSalvo[CHAVE_ABA] = indice
     }
 
     /* ---------------- Aba Portabilidade ---------------- */
 
-    fun alterarParcelaPortabilidade(texto: String) {
-        _portabilidade.update { it.copy(parcelaTexto = CalculadoraUtils.sanitizarEntradaNumerica(texto)) }
+    fun alterarParcelaPortabilidade(texto: String) = atualizarPortabilidade {
+        it.copy(parcelaTexto = CalculadoraUtils.sanitizarEntradaNumerica(texto))
     }
 
-    fun alterarJurosPortabilidade(texto: String) {
-        _portabilidade.update { it.copy(jurosTexto = CalculadoraUtils.sanitizarEntradaNumerica(texto)) }
+    fun alterarJurosPortabilidade(texto: String) = atualizarPortabilidade {
+        it.copy(jurosTexto = CalculadoraUtils.sanitizarEntradaNumerica(texto))
     }
 
-    fun alterarQuantoFoi(texto: String) {
-        _portabilidade.update { it.copy(quantoFoiTexto = apenasDigitos(texto)) }
+    fun alterarQuantoFoi(texto: String) = atualizarPortabilidade {
+        it.copy(quantoFoiTexto = apenasDigitos(texto))
     }
 
-    fun alterarQuantoResta(texto: String) {
-        _portabilidade.update { it.copy(quantoRestaTexto = apenasDigitos(texto)) }
+    fun alterarQuantoResta(texto: String) = atualizarPortabilidade {
+        it.copy(quantoRestaTexto = apenasDigitos(texto))
     }
 
     /* ---------------- Aba Margem ---------------- */
 
-    fun alterarSalario(texto: String) {
-        _margem.update { it.copy(salarioTexto = CalculadoraUtils.sanitizarEntradaNumerica(texto)) }
+    fun alterarSalario(texto: String) = atualizarMargem {
+        it.copy(salarioTexto = CalculadoraUtils.sanitizarEntradaNumerica(texto))
     }
 
-    fun alterarPercentualMargem(texto: String) {
-        _margem.update { it.copy(margemTexto = CalculadoraUtils.sanitizarEntradaNumerica(texto)) }
+    fun alterarPercentualMargem(texto: String) = atualizarMargem {
+        it.copy(margemTexto = CalculadoraUtils.sanitizarEntradaNumerica(texto))
     }
 
-    fun alterarParcelaComprometida(indice: Int, texto: String) {
-        _margem.update { estado ->
-            val atualizadas = estado.parcelasTexto.toMutableList().also {
-                it[indice] = CalculadoraUtils.sanitizarEntradaNumerica(texto)
-            }
-            estado.copy(parcelasTexto = atualizadas)
+    fun alterarParcelaComprometida(indice: Int, texto: String) = atualizarMargem { estado ->
+        val atualizadas = estado.parcelasTexto.toMutableList().also {
+            it[indice] = CalculadoraUtils.sanitizarEntradaNumerica(texto)
         }
+        estado.copy(parcelasTexto = atualizadas)
     }
 
-    fun adicionarParcela() {
-        _margem.update { it.copy(parcelasTexto = it.parcelasTexto + "") }
+    fun adicionarParcela() = atualizarMargem {
+        it.copy(parcelasTexto = it.parcelasTexto + "")
     }
 
-    fun removerParcela(indice: Int) {
-        _margem.update { estado ->
-            estado.copy(parcelasTexto = estado.parcelasTexto.filterIndexed { i, _ -> i != indice })
-        }
+    fun removerParcela(indice: Int) = atualizarMargem { estado ->
+        estado.copy(parcelasTexto = estado.parcelasTexto.filterIndexed { i, _ -> i != indice })
     }
 
     /* ---------------- Aba Empréstimo ---------------- */
 
-    fun alterarParcelaEmprestimo(texto: String) {
-        _emprestimo.update { it.copy(parcelaTexto = CalculadoraUtils.sanitizarEntradaNumerica(texto)) }
+    fun alterarParcelaEmprestimo(texto: String) = atualizarEmprestimo {
+        it.copy(parcelaTexto = CalculadoraUtils.sanitizarEntradaNumerica(texto))
     }
 
-    fun alterarPrazo(texto: String) {
-        _emprestimo.update { it.copy(prazoTexto = apenasDigitos(texto)) }
+    fun alterarPrazo(texto: String) = atualizarEmprestimo {
+        it.copy(prazoTexto = apenasDigitos(texto))
     }
 
-    fun alterarJurosEmprestimo(texto: String) {
-        _emprestimo.update { it.copy(jurosTexto = CalculadoraUtils.sanitizarEntradaNumerica(texto)) }
+    fun alterarJurosEmprestimo(texto: String) = atualizarEmprestimo {
+        it.copy(jurosTexto = CalculadoraUtils.sanitizarEntradaNumerica(texto))
     }
 
-    fun alternarIof() {
-        _emprestimo.update { it.copy(iofAtivo = !it.iofAtivo) }
+    fun alternarIof() = atualizarEmprestimo {
+        it.copy(iofAtivo = !it.iofAtivo)
     }
 
     /** Joga a Margem Real calculada na aba Margem para o campo de parcela. */
     fun usarMargemSugerida() {
-        val sugestao = CalculadoraUtils.formatarParaEdicao(_margem.value.margemRealDisponivel)
-        _emprestimo.update { it.copy(parcelaTexto = sugestao) }
+        val sugestao = CalculadoraUtils.formatarParaEdicao(margem.value.margemRealDisponivel)
+        atualizarEmprestimo { it.copy(parcelaTexto = sugestao) }
+    }
+
+    /* ---------------- Escrita no estado salvo ---------------- */
+
+    private fun atualizarPortabilidade(
+        transformar: (PortabilidadeUiState) -> PortabilidadeUiState
+    ) {
+        estadoSalvo[CHAVE_PORTABILIDADE] = transformar(portabilidade.value)
+    }
+
+    private fun atualizarMargem(transformar: (MargemUiState) -> MargemUiState) {
+        estadoSalvo[CHAVE_MARGEM] = transformar(margem.value)
+    }
+
+    private fun atualizarEmprestimo(
+        transformar: (EmprestimoUiState) -> EmprestimoUiState
+    ) {
+        estadoSalvo[CHAVE_EMPRESTIMO] = transformar(emprestimo.value)
     }
 
     private fun apenasDigitos(texto: String): String = texto.filter { it.isDigit() }
+
+    private companion object {
+        const val CHAVE_ABA = "aba_selecionada"
+        const val CHAVE_PORTABILIDADE = "estado_portabilidade"
+        const val CHAVE_MARGEM = "estado_margem"
+        const val CHAVE_EMPRESTIMO = "estado_emprestimo"
+    }
 }

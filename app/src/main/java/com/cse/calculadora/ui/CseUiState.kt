@@ -1,19 +1,23 @@
 package com.cse.calculadora.ui
 
 import com.cse.calculadora.CalculadoraUtils
+import java.io.Serializable
 
 /**
  * Estado da aba Portabilidade: os campos digitados e os valores derivados deles.
  *
  * Os campos são guardados como texto (é o que o usuário digita) e os resultados
  * saem de [CalculadoraUtils] — a UI só exibe, não calcula.
+ *
+ * É [Serializable] para que o SavedStateHandle consiga guardá-lo quando o
+ * sistema mata o processo do app em segundo plano.
  */
 data class PortabilidadeUiState(
     val parcelaTexto: String = "",
     val jurosTexto: String = "",
     val quantoFoiTexto: String = "",
     val quantoRestaTexto: String = ""
-) {
+) : Serializable {
     private val parcela: Double get() = CalculadoraUtils.parseValorDigitado(parcelaTexto)
     private val juros: Double get() = CalculadoraUtils.parseValorDigitado(jurosTexto)
 
@@ -36,7 +40,7 @@ data class MargemUiState(
     val salarioTexto: String = "",
     val margemTexto: String = "35",
     val parcelasTexto: List<String> = listOf("")
-) {
+) : Serializable {
     private val salarioBruto: Double get() = CalculadoraUtils.parseValorDigitado(salarioTexto)
     private val margemPercentual: Double get() = CalculadoraUtils.parseValorDigitado(margemTexto)
 
@@ -61,7 +65,7 @@ data class EmprestimoUiState(
     val prazoTexto: String = "84",
     val jurosTexto: String = "",
     val iofAtivo: Boolean = false
-) {
+) : Serializable {
     private val parcela: Double get() = CalculadoraUtils.parseValorDigitado(parcelaTexto)
     private val juros: Double get() = CalculadoraUtils.parseValorDigitado(jurosTexto)
     private val prazoMeses: Int get() = CalculadoraUtils.parseValorDigitado(prazoTexto).toInt()

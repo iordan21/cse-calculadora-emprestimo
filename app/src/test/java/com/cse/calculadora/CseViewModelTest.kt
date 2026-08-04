@@ -1,5 +1,6 @@
 package com.cse.calculadora
 
+import androidx.lifecycle.SavedStateHandle
 import com.cse.calculadora.ui.CseViewModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -16,7 +17,7 @@ class CseViewModelTest {
 
     @Test
     fun `entrada invalida e filtrada antes de virar estado`() {
-        val viewModel = CseViewModel()
+        val viewModel = CseViewModel(SavedStateHandle())
 
         viewModel.alterarParcelaPortabilidade("R$ 1a2b3,45")
         viewModel.alterarQuantoResta("60x")
@@ -27,7 +28,7 @@ class CseViewModelTest {
 
     @Test
     fun `margem real desconta as parcelas ja comprometidas`() {
-        val viewModel = CseViewModel()
+        val viewModel = CseViewModel(SavedStateHandle())
 
         viewModel.alterarSalario("5000")   // margem padrão de 35% -> R$ 1.750,00
         viewModel.adicionarParcela()
@@ -43,7 +44,7 @@ class CseViewModelTest {
 
     @Test
     fun `margem estourada nao sugere valor negativo para o emprestimo`() {
-        val viewModel = CseViewModel()
+        val viewModel = CseViewModel(SavedStateHandle())
 
         viewModel.alterarSalario("2000")   // margem bruta de R$ 700,00
         viewModel.alterarParcelaComprometida(indice = 0, texto = "900")
@@ -56,7 +57,7 @@ class CseViewModelTest {
 
     @Test
     fun `usar margem sugerida preenche a parcela da aba emprestimo`() {
-        val viewModel = CseViewModel()
+        val viewModel = CseViewModel(SavedStateHandle())
 
         viewModel.alterarSalario("5000")   // margem real de R$ 1.750,00
         viewModel.usarMargemSugerida()
@@ -66,7 +67,7 @@ class CseViewModelTest {
 
     @Test
     fun `alternar IOF desconta a aliquota do valor bruto`() {
-        val viewModel = CseViewModel()
+        val viewModel = CseViewModel(SavedStateHandle())
 
         viewModel.alterarParcelaEmprestimo("500")
         viewModel.alterarJurosEmprestimo("1,5")   // prazo padrão de 84 meses
@@ -83,8 +84,26 @@ class CseViewModelTest {
     }
 
     @Test
+    fun `o que foi digitado sobrevive a recriacao do ViewModel`() {
+        val estadoSalvo = SavedStateHandle()
+
+        val antes = CseViewModel(estadoSalvo)
+        antes.alterarParcelaPortabilidade("800")
+        antes.alterarSalario("5000")
+        antes.selecionarAba(2)
+
+        // Mesmo SavedStateHandle: é o que o sistema devolve quando recria o
+        // processo que havia matado em segundo plano.
+        val depois = CseViewModel(estadoSalvo)
+
+        assertEquals("800", depois.portabilidade.value.parcelaTexto)
+        assertEquals("5000", depois.margem.value.salarioTexto)
+        assertEquals(2, depois.abaSelecionada.value)
+    }
+
+    @Test
     fun `o que foi digitado sobrevive a troca de aba`() {
-        val viewModel = CseViewModel()
+        val viewModel = CseViewModel(SavedStateHandle())
 
         viewModel.alterarParcelaPortabilidade("800")
         viewModel.selecionarAba(2)
