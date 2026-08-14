@@ -11,6 +11,13 @@ import java.io.Serializable
  *
  * É [Serializable] para que o SavedStateHandle consiga guardá-lo quando o
  * sistema mata o processo do app em segundo plano.
+ *
+ * O idiomático no Android seria `@Parcelize`, que gera a escrita e a leitura em
+ * tempo de compilação em vez de resolver por reflexão. Não dá, neste projeto: o
+ * Kotlin embutido do AGP 9 aceita o plugin parcelize na configuração, mas não
+ * roda o plugin de compilação — a anotação resolve e mesmo assim `writeToParcel`
+ * nunca é gerado. Sair disso exigiria desligar o Kotlin embutido do módulo
+ * inteiro; com três estados pequenos, a reflexão não custa nada perto do risco.
  */
 data class PortabilidadeUiState(
     val parcelaTexto: String = "",

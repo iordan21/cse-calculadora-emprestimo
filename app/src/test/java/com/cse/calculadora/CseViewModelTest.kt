@@ -111,4 +111,35 @@ class CseViewModelTest {
 
         assertEquals("800", viewModel.portabilidade.value.parcelaTexto)
     }
+
+    @Test
+    fun `remover parcela tira a linha certa e preserva as outras`() {
+        val viewModel = CseViewModel(SavedStateHandle())
+
+        viewModel.adicionarParcela()
+        viewModel.adicionarParcela()
+        viewModel.alterarParcelaComprometida(indice = 0, texto = "100")
+        viewModel.alterarParcelaComprometida(indice = 1, texto = "200")
+        viewModel.alterarParcelaComprometida(indice = 2, texto = "300")
+
+        viewModel.removerParcela(indice = 1)
+
+        val margem = viewModel.margem.value
+        assertEquals(listOf("100", "300"), margem.parcelasTexto)
+        assertEquals(400.0, margem.parcelaComprometida, tolerancia)
+    }
+
+    @Test
+    fun `a ultima parcela nao pode ser removida`() {
+        val viewModel = CseViewModel(SavedStateHandle())
+
+        // Uma linha só: a tela esconde o botão de remover.
+        assertFalse(viewModel.margem.value.podeRemoverParcela)
+
+        viewModel.adicionarParcela()
+        assertTrue(viewModel.margem.value.podeRemoverParcela)
+
+        viewModel.removerParcela(indice = 0)
+        assertFalse(viewModel.margem.value.podeRemoverParcela)
+    }
 }
