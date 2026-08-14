@@ -1,15 +1,21 @@
 package com.cse.calculadora
 
+import android.graphics.Color
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.union
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.ScaffoldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
@@ -30,7 +36,11 @@ import com.cse.calculadora.ui.theme.CSETheme
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        // A TopAppBar usa `primary` (azul escuro) nos dois temas, e é ela que fica
+        // atrás da status bar. O padrão `auto` pintaria ícone preto no tema claro —
+        // 3,4:1 de contraste sobre esse azul, abaixo do mínimo de 4,5:1. Fixando em
+        // `dark`, o ícone sai branco sempre: 6,1:1.
+        enableEdgeToEdge(statusBarStyle = SystemBarStyle.dark(Color.TRANSPARENT))
         setContent {
             CSETheme {
                 Surface(
@@ -63,6 +73,12 @@ fun CSEApp(viewModel: CseViewModel = viewModel()) {
     val emprestimo by viewModel.emprestimo.collectAsStateWithLifecycle()
 
     Scaffold(
+        // `enableEdgeToEdge` desliga o redimensionamento automático da janela, então
+        // é o app que precisa descontar o teclado. Sem isto, o campo focado da aba
+        // Margem some atrás do teclado e a rolagem já está no fim. `union` toma o
+        // maior entre a barra de navegação e o teclado — somar os dois deixaria uma
+        // folga inútil acima do teclado.
+        contentWindowInsets = ScaffoldDefaults.contentWindowInsets.union(WindowInsets.ime),
         topBar = {
             TopAppBar(
                 title = { Text(NOME_APP) },

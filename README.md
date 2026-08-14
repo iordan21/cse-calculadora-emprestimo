@@ -50,8 +50,9 @@ O app segue MVVM em três camadas bem separadas:
 ./gradlew test
 ```
 
-13 testes de JVM cobrindo a fórmula da Tabela Price, o parsing de moeda em pt-BR, a
-sanitização da digitação e o comportamento das abas (margem estourada, sugestão de
+28 testes de JVM cobrindo a fórmula da Tabela Price, o parsing de moeda em pt-BR, a
+sanitização da digitação (inclusive o ponto digitado como separador decimal), o limite
+de dígitos dos campos de meses e o comportamento das abas (margem estourada, sugestão de
 parcela, desconto de IOF e estado preservado entre abas).
 
 ## Build

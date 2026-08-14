@@ -71,16 +71,22 @@ object CalculadoraUtils {
         return normalizado.toDoubleOrNull() ?: 0.0
     }
 
-    /** Filtra digitação em tempo real: só dígitos e uma única vírgula decimal. */
+    /**
+     * Filtra digitação em tempo real: só dígitos e um único separador decimal.
+     *
+     * O ponto é aceito como separador decimal e convertido em vírgula. Quem
+     * digita num teclado de layout en-US escreve "1.89", e descartar o ponto
+     * transformaria a taxa em 189% sem aviso nenhum na tela.
+     */
     fun sanitizarEntradaNumerica(texto: String): String {
         val resultado = StringBuilder()
-        var virgulaUsada = false
+        var separadorUsado = false
         for (c in texto) {
             when {
                 c.isDigit() -> resultado.append(c)
-                c == ',' && !virgulaUsada -> {
-                    resultado.append(c)
-                    virgulaUsada = true
+                (c == ',' || c == '.') && !separadorUsado -> {
+                    resultado.append(',')
+                    separadorUsado = true
                 }
             }
         }

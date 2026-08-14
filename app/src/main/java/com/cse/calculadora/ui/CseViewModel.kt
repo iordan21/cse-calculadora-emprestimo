@@ -118,9 +118,20 @@ class CseViewModel(private val estadoSalvo: SavedStateHandle) : ViewModel() {
         estadoSalvo[CHAVE_EMPRESTIMO] = transformar(emprestimo.value)
     }
 
-    private fun apenasDigitos(texto: String): String = texto.filter { it.isDigit() }
+    /**
+     * Campos de quantidade de meses: só dígitos, no máximo [MAX_DIGITOS_MESES].
+     *
+     * O limite não é estético. Sem ele, dez dígitos viram `Int.MAX_VALUE` no
+     * [PortabilidadeUiState], e a soma `quantoFoi + quantoResta` estoura o Int:
+     * a tela mostra "-2 parcelas" e um término estimado no ano 178954946.
+     * Três dígitos cobrem 999 meses, oitenta e três anos de contrato.
+     */
+    private fun apenasDigitos(texto: String): String =
+        texto.filter { it.isDigit() }.take(MAX_DIGITOS_MESES)
 
     private companion object {
+        const val MAX_DIGITOS_MESES = 3
+
         const val CHAVE_ABA = "aba_selecionada"
         const val CHAVE_PORTABILIDADE = "estado_portabilidade"
         const val CHAVE_MARGEM = "estado_margem"

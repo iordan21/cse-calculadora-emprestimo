@@ -56,6 +56,26 @@ class CalculadoraUtilsTest {
     }
 
     @Test
+    fun `ponto digitado vale como virgula decimal`() {
+        // Teclado com layout en-US entrega ponto. Descartá-lo transformava
+        // 1,89% em 189% sem nada na tela indicando a troca.
+        assertEquals("1,89", CalculadoraUtils.sanitizarEntradaNumerica("1.89"))
+        assertEquals("0,5", CalculadoraUtils.sanitizarEntradaNumerica("0.5"))
+    }
+
+    @Test
+    fun `ponto e virgula levam ao mesmo valor`() {
+        val comPonto = CalculadoraUtils.sanitizarEntradaNumerica("1.89")
+        val comVirgula = CalculadoraUtils.sanitizarEntradaNumerica("1,89")
+
+        assertEquals(
+            CalculadoraUtils.parseValorDigitado(comVirgula),
+            CalculadoraUtils.parseValorDigitado(comPonto),
+            tolerancia
+        )
+    }
+
+    @Test
     fun `formatar para edicao usa virgula e duas casas`() {
         assertEquals("1500,00", CalculadoraUtils.formatarParaEdicao(1_500.0))
         assertEquals("1234,57", CalculadoraUtils.formatarParaEdicao(1_234.567))

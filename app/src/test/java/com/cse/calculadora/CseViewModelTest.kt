@@ -27,6 +27,36 @@ class CseViewModelTest {
     }
 
     @Test
+    fun `juros digitado com ponto rende o mesmo saldo que com virgula`() {
+        val viewModel = CseViewModel(SavedStateHandle())
+
+        viewModel.alterarParcelaPortabilidade("500")
+        viewModel.alterarJurosPortabilidade("1.5")   // ponto, não vírgula
+        viewModel.alterarQuantoResta("84")
+
+        // Antes, o ponto sumia e a taxa virava 15% a.m.: saldo de R$ 3.333,31.
+        assertEquals("1,5", viewModel.portabilidade.value.jurosTexto)
+        assertEquals(23_789.32, viewModel.portabilidade.value.saldoDevedor, tolerancia)
+    }
+
+    @Test
+    fun `campo de meses para em tres digitos e nao estoura o prazo`() {
+        val viewModel = CseViewModel(SavedStateHandle())
+
+        viewModel.alterarQuantoFoi("9999999999")
+        viewModel.alterarQuantoResta("9999999999")
+        viewModel.alterarPrazo("9999999999")
+
+        // Sem o limite, cada campo virava Int.MAX_VALUE e a soma estourava
+        // o Int: a tela mostrava "-2 parcelas".
+        val portabilidade = viewModel.portabilidade.value
+        assertEquals("999", portabilidade.quantoFoiTexto)
+        assertEquals("999", portabilidade.quantoRestaTexto)
+        assertEquals(1_998, portabilidade.prazoOriginal)
+        assertEquals("999", viewModel.emprestimo.value.prazoTexto)
+    }
+
+    @Test
     fun `margem real desconta as parcelas ja comprometidas`() {
         val viewModel = CseViewModel(SavedStateHandle())
 
