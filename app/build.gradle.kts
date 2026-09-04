@@ -1,7 +1,19 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.plugin.compose")
 }
+
+// Credenciais da chave de upload. Ficam em local.properties, que não vai para o
+// git — o .jks/.p12 mora fora do repositório. Quem não tem a chave (a CI, por
+// exemplo) continua compilando: sem as propriedades, o release sai sem
+// signingConfig, exatamente como era antes.
+val chave = Properties().apply {
+    val arquivo = rootProject.file("local.properties")
+    if (arquivo.exists()) arquivo.inputStream().use { load(it) }
+}
+val temChaveDeUpload = chave.getProperty("cse.storeFile") != null
 
 android {
     namespace = "com.cse.calculadora"
@@ -21,8 +33,22 @@ android {
         }
     }
 
+    signingConfigs {
+        if (temChaveDeUpload) {
+            create("upload") {
+                storeFile = file(chave.getProperty("cse.storeFile"))
+                storePassword = chave.getProperty("cse.storePassword")
+                keyAlias = chave.getProperty("cse.keyAlias") ?: "cse_key"
+                keyPassword = chave.getProperty("cse.keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
+            if (temChaveDeUpload) {
+                signingConfig = signingConfigs.getByName("upload")
+            }
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
@@ -56,12 +82,12 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-savedstate:2.8.4")
     implementation("androidx.activity:activity-compose:1.9.1")
 
-    // BOM travado em 2024.09.03 (Compose UI 1.7.3) por necessidade, nao por gosto.
-    // O collectAsStateWithLifecycle da lifecycle 2.8.4 le o CompositionLocal
-    // androidx.lifecycle.compose.LocalLifecycleOwner, e quem fornece esse local e
+    // BOM travado em 2024.09.03 (Compose UI 1.7.3) por necessidade, não por gosto.
+    // O collectAsStateWithLifecycle da lifecycle 2.8.4 lê o CompositionLocal
+    // androidx.lifecycle.compose.LocalLifecycleOwner, e quem fornece esse local é
     // o Compose UI a partir da 1.7. Com o BOM 2024.06.00 (UI 1.6.8) o app subia em
-    // debug e morria no release, no primeiro frame. Se descer o BOM, desca a
-    // lifecycle junto.
+    // debug e morria no release, no primeiro frame, com "CompositionLocal
+    // LocalLifecycleOwner not present". Se descer o BOM, desça a lifecycle junto.
     implementation(platform("androidx.compose:compose-bom:2024.09.03"))
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
