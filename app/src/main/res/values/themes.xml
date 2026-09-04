@@ -1,4 +1,9 @@
-<resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Tema base da activity; o Material3 real é aplicado via Jetpack Compose em ui/theme -->
-    <style name="Theme.CSE" parent="android:Theme.Material.Light.NoActionBar" />
+<resources>
+    <!-- Tema base da activity; o Material3 real é aplicado via Jetpack Compose em ui/theme.
+         O fundo tem que ser o mesmo grafite do Compose: é ele que a janela mostra entre o
+         toque no ícone e o primeiro frame do app. Com o tema Light aqui, a abertura piscava
+         branco antes de virar escuro. -->
+    <style name="Theme.CSE" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/grafite_900</item>
+    </style>
 </resources>

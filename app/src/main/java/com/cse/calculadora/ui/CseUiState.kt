@@ -37,6 +37,17 @@ data class PortabilidadeUiState(
 
     val saldoDevedor: Double
         get() = CalculadoraUtils.calcularPortabilidade(parcela, quantoResta, juros).saldoDevedor
+
+    /**
+     * Sem os campos que sustentam a conta, não existe saldo devedor — existe
+     * campo vazio. A tela mostra um traço em vez de "R$ 0,00", porque zero é
+     * uma resposta e o app ainda não tem resposta nenhuma.
+     *
+     * Os juros ficam de fora: contrato sem juros informado é conta legítima
+     * (o saldo vira parcela × parcelas restantes), campo em branco não é.
+     */
+    val temEntrada: Boolean
+        get() = parcelaTexto.isNotBlank() && quantoRestaTexto.isNotBlank()
 }
 
 /**
@@ -61,6 +72,9 @@ data class MargemUiState(
     val margemRealDisponivel: Double get() = margemReal.coerceAtLeast(0.0)
 
     val podeRemoverParcela: Boolean get() = parcelasTexto.size > 1
+
+    /** Sem salário não há margem: nem bruta, nem estourada. Ver [PortabilidadeUiState.temEntrada]. */
+    val temEntrada: Boolean get() = salarioTexto.isNotBlank()
 }
 
 /**
@@ -80,8 +94,43 @@ data class EmprestimoUiState(
     val valorBrutoFinanciavel: Double
         get() = CalculadoraUtils.valorPresente(parcela, prazoMeses, juros)
 
-    val descontoIof: Double get() = valorBrutoFinanciavel * CalculadoraUtils.ALIQUOTA_IOF
+    val descontoIof: Double
+        get() = CalculadoraUtils.calcularIof(parcela, prazoMeses, juros)
+
+    /**
+     * Quanto o IOF representa do valor financiado, para a tela poder dizer o
+     * percentual em vez de repetir um "~3%" que não vale para todo prazo.
+     */
+    val aliquotaIofEfetiva: String
+        get() = if (valorBrutoFinanciavel > 0.0) {
+            CalculadoraUtils.formatarPercentual(descontoIof / valorBrutoFinanciavel)
+        } else {
+            ""
+        }
 
     val valorFinal: Double
         get() = if (iofAtivo) valorBrutoFinanciavel - descontoIof else valorBrutoFinanciavel
+
+    /** Ver [PortabilidadeUiState.temEntrada]. */
+    val temEntrada: Boolean get() = parcelaTexto.isNotBlank() && prazoTexto.isNotBlank()
+
+    /** Resumo da entrada, do jeito que se fala: "84x de R$ 480,00". */
+    val parcelamento: String
+        get() = "${prazoMeses}x de ${CalculadoraUtils.formatarMoeda(parcela)}"
+
+    /**
+     * CET sobre o que de fato cai na conta, em taxa mensal e anual.
+     *
+     * Com o IOF descontado, o dinheiro que entra é menor que o principal, mas as
+     * parcelas continuam as mesmas — o custo real sobe acima do juros digitado,
+     * e é esse número que compara duas propostas.
+     */
+    val cetTexto: String
+        get() {
+            val mensal = CalculadoraUtils.calcularCetMensal(parcela, prazoMeses, valorFinal)
+            if (mensal <= 0.0) return ""
+            val anual = CalculadoraUtils.cetAnual(mensal)
+            return "${CalculadoraUtils.formatarPercentual(mensal)} a.m. · " +
+                "${CalculadoraUtils.formatarPercentual(anual)} a.a."
+        }
 }

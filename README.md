@@ -8,7 +8,11 @@ App Android nativo (Kotlin + Jetpack Compose) para simular portabilidade de empr
 
 **Margem** — calcula a margem consignável bruta a partir do salário e do percentual de margem, descontando as parcelas já comprometidas (é possível adicionar quantas parcelas forem necessárias). O resultado é sugerido automaticamente na aba de Empréstimo.
 
-**Empréstimo** — simula o valor financiável de uma nova parcela ao longo do prazo, com opção de visualizar o valor bruto ou já descontando o IOF estimado (~3%).
+**Empréstimo** — simula o valor financiável de uma nova parcela ao longo do prazo, com opção de visualizar o valor bruto ou já descontando o IOF.
+
+O IOF segue o Decreto 6.306/2007 para mutuário pessoa física: alíquota diária de 0,0082% sobre o principal de cada parcela (art. 7º, I, "b", 2 — redação do Decreto 8.392/2015), limitada a 365 dias por parcela (§ 1º), mais o adicional de 0,38% que independe do prazo (§ 15 — redação do Decreto 12.466/2025). A alíquota efetiva sai do prazo: fica perto de 1,9% em 12 meses e de 3,05% em 108. O app mostra o percentual calculado, não um valor fixo.
+
+Com o IOF ligado, o cartão também mostra o **CET** — a taxa que iguala o que cai na conta ao fluxo de parcelas, na definição da Resolução CMN 4.881/2020 (art. 4º). É um CET parcial, de juros e IOF: tarifa, seguro prestamista e registro de contrato o app não tem como conhecer. Serve como piso — o CET informado pelo banco vem igual ou maior, e um CET declarado abaixo dele é sinal de proposta que não fecha.
 
 Todos os cálculos de valor presente usam a fórmula da Tabela Price:
 
@@ -50,10 +54,10 @@ O app segue MVVM em três camadas bem separadas:
 ./gradlew test
 ```
 
-28 testes de JVM cobrindo a fórmula da Tabela Price, o parsing de moeda em pt-BR, a
+34 testes de JVM cobrindo a fórmula da Tabela Price, o parsing de moeda em pt-BR, a
 sanitização da digitação (inclusive o ponto digitado como separador decimal), o limite
 de dígitos dos campos de meses e o comportamento das abas (margem estourada, sugestão de
-parcela, desconto de IOF e estado preservado entre abas).
+parcela, o IOF do decreto (teto de 365 dias e adicional) e estado preservado entre abas).
 
 ## Build
 

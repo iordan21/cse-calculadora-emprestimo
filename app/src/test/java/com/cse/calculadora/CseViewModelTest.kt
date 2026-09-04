@@ -109,8 +109,8 @@ class CseViewModelTest {
 
         val comIof = viewModel.emprestimo.value
         assertTrue(comIof.iofAtivo)
-        assertEquals(bruto * 0.03, comIof.descontoIof, tolerancia)
-        assertEquals(bruto * 0.97, comIof.valorFinal, tolerancia)
+        assertEquals(bruto - comIof.descontoIof, comIof.valorFinal, tolerancia)
+        assertTrue("o IOF tem que sair do bruto", comIof.descontoIof > 0.0)
     }
 
     @Test

@@ -13,8 +13,8 @@ android {
         targetSdk = 36
 
         // Configurações globais de versão do app
-        versionCode = 6
-        versionName = "1.2.0"
+        versionCode = 7
+        versionName = "1.5.0"
 
         vectorDrawables {
             useSupportLibrary = true
@@ -61,7 +61,8 @@ dependencies {
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
-    implementation("androidx.compose.material:material-icons-extended")
+    // Só Add e Close são usados, e os dois estão no core que o Material3 já traz.
+    // O -extended empacota ~1.500 vetores; no release o R8 corta, no debug não.
 
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")

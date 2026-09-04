@@ -1,0 +1,5 @@
+<resources>
+    <!-- Mesmo Grafite900 do tema Compose (ui/theme/Theme.kt). Existe aqui porque
+         windowBackground é resolvido pelo sistema antes de o Compose desenhar. -->
+    <color name="grafite_900">#FF0E1013</color>
+</resources>
