@@ -7,24 +7,32 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.union
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScaffoldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.cse.calculadora.ui.CseViewModel
+import com.cse.calculadora.ui.abrirFichaNaPlayStore
 import com.cse.calculadora.ui.abas.AbaEmprestimo
 import com.cse.calculadora.ui.abas.AbaMargem
 import com.cse.calculadora.ui.abas.AbaPortabilidade
@@ -67,6 +75,7 @@ fun CSEApp(viewModel: CseViewModel = viewModel()) {
     val portabilidade by viewModel.portabilidade.collectAsStateWithLifecycle()
     val margem by viewModel.margem.collectAsStateWithLifecycle()
     val emprestimo by viewModel.emprestimo.collectAsStateWithLifecycle()
+    val contexto = LocalContext.current
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -78,7 +87,10 @@ fun CSEApp(viewModel: CseViewModel = viewModel()) {
         contentWindowInsets = ScaffoldDefaults.contentWindowInsets.union(WindowInsets.ime)
     ) { paddingInterno ->
         Column(modifier = Modifier.padding(paddingInterno)) {
-            Cabecalho(titulo = titulosAbas[abaSelecionada])
+            Cabecalho(
+                titulo = titulosAbas[abaSelecionada],
+                aoAvaliar = { abrirFichaNaPlayStore(contexto) }
+            )
 
             SeletorAbas(
                 titulos = titulosAbas,
@@ -120,7 +132,8 @@ fun CSEApp(viewModel: CseViewModel = viewModel()) {
 }
 
 /**
- * Nome do app pequeno em cima, nome da aba grande embaixo.
+ * Nome do app pequeno em cima, nome da aba grande embaixo, e a estrela de
+ * avaliar na ponta direita.
  *
  * A barra azul com "CSE - Calculadora Simples de Empréstimo" saiu daqui: o
  * título inteiro ocupava a faixa toda em todas as telas para dizer o que a
@@ -128,24 +141,42 @@ fun CSEApp(viewModel: CseViewModel = viewModel()) {
  * é ela que ficou grande.
  */
 @Composable
-private fun Cabecalho(titulo: String) {
-    Column(
+private fun Cabecalho(titulo: String, aoAvaliar: () -> Unit) {
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 20.dp, end = 20.dp, top = 24.dp, bottom = 20.dp)
+            // 8.dp na direita, não 20: o IconButton tem alvo de toque de 48.dp
+            // com um ícone de 24.dp no meio, então ele já carrega 12.dp de folga
+            // interna. Os 20.dp cheios jogariam a estrela para dentro da margem
+            // e ela sairia do prumo com o título.
+            .padding(start = 20.dp, end = 8.dp, top = 24.dp, bottom = 20.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            text = NOME_APP,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Text(
-            text = titulo,
-            style = MaterialTheme.typography.headlineSmall,
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier
-                .padding(top = 4.dp)
-                .semantics { heading() }
-        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = NOME_APP,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = titulo,
+                style = MaterialTheme.typography.headlineSmall,
+                color = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier
+                    .padding(top = 4.dp)
+                    .semantics { heading() }
+            )
+        }
+
+        IconButton(onClick = aoAvaliar) {
+            Icon(
+                imageVector = Icons.Filled.Star,
+                contentDescription = "Avaliar o app na Play Store",
+                // Cinza, não verde. O acento é reservado ao número que decide a
+                // compra e à aba ativa (ver Theme.kt); uma estrela verde no
+                // canto disputaria o olho com o resultado do cálculo.
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
     }
 }
