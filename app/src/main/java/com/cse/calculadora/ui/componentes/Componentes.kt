@@ -23,6 +23,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -36,6 +37,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
 
 /**
  * Peças de interface repetidas pelas três abas.
@@ -181,6 +183,12 @@ private fun ValorEmDestaque(valor: String, cor: Color) {
  * botão apagado diz isso sem precisar de aviso. O contorno precisa ser apagado
  * à mão, porque o `border` do OutlinedButton é parâmetro e não reage ao
  * `enabled` sozinho.
+ *
+ * O próprio botão confirma a cópia, trocando de texto por [ESPERA_CONFIRMACAO].
+ * É o único aviso que funciona em qualquer aparelho: do Android 13 em diante o
+ * AOSP mostra uma prévia do que foi copiado, mas nem toda ROM mostra — no
+ * HyperOS/Android 16 não aparece nada, e um botão que não responde ao toque
+ * parece quebrado.
  */
 @Composable
 internal fun BotaoCopiarResumo(
@@ -188,8 +196,23 @@ internal fun BotaoCopiarResumo(
     habilitado: Boolean,
     modifier: Modifier = Modifier
 ) {
+    var confirmando by remember { mutableStateOf(false) }
+
+    // Volta ao texto normal sozinho. A chave é `confirmando`, então tocar de
+    // novo durante a confirmação não reinicia a espera — o botão não fica preso
+    // em "copiado" enquanto alguém insiste no toque.
+    LaunchedEffect(confirmando) {
+        if (confirmando) {
+            delay(ESPERA_CONFIRMACAO)
+            confirmando = false
+        }
+    }
+
     OutlinedButton(
-        onClick = aoCopiar,
+        onClick = {
+            aoCopiar()
+            confirmando = true
+        },
         enabled = habilitado,
         shape = MaterialTheme.shapes.small,
         border = BorderStroke(
@@ -203,9 +226,15 @@ internal fun BotaoCopiarResumo(
             .fillMaxWidth()
             .heightIn(min = 52.dp)
     ) {
-        Text("Copiar resumo", style = MaterialTheme.typography.labelLarge)
+        Text(
+            text = if (confirmando) "Resumo copiado" else "Copiar resumo",
+            style = MaterialTheme.typography.labelLarge
+        )
     }
 }
+
+/** Quanto tempo o botão fica dizendo que copiou. */
+private const val ESPERA_CONFIRMACAO = 1_800L
 
 /**
  * Título de bloco de campos.

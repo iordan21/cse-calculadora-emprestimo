@@ -109,9 +109,7 @@ fun CSEApp(viewModel: CseViewModel = viewModel()) {
                     aoAlterarJuros = viewModel::alterarJurosPortabilidade,
                     aoAlterarQuantoFoi = viewModel::alterarQuantoFoi,
                     aoAlterarQuantoResta = viewModel::alterarQuantoResta,
-                    aoCopiar = {
-                        copiarResumo(portabilidade.resumo, areaDeTransferencia, contexto)
-                    }
+                    aoCopiar = { copiarResumo(portabilidade.resumo, areaDeTransferencia) }
                 )
 
                 1 -> AbaMargem(
@@ -121,7 +119,7 @@ fun CSEApp(viewModel: CseViewModel = viewModel()) {
                     aoAlterarParcela = viewModel::alterarParcelaComprometida,
                     aoAdicionarParcela = viewModel::adicionarParcela,
                     aoRemoverParcela = viewModel::removerParcela,
-                    aoCopiar = { copiarResumo(margem.resumo, areaDeTransferencia, contexto) }
+                    aoCopiar = { copiarResumo(margem.resumo, areaDeTransferencia) }
                 )
 
                 2 -> AbaEmprestimo(
@@ -132,7 +130,7 @@ fun CSEApp(viewModel: CseViewModel = viewModel()) {
                     aoAlterarJuros = viewModel::alterarJurosEmprestimo,
                     aoAlternarIof = viewModel::alternarIof,
                     aoUsarMargemSugerida = viewModel::usarMargemSugerida,
-                    aoCopiar = { copiarResumo(emprestimo.resumo, areaDeTransferencia, contexto) }
+                    aoCopiar = { copiarResumo(emprestimo.resumo, areaDeTransferencia) }
                 )
             }
         }

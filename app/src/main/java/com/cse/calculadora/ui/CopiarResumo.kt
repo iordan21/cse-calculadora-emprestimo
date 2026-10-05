@@ -1,8 +1,5 @@
 package com.cse.calculadora.ui
 
-import android.content.Context
-import android.os.Build
-import android.widget.Toast
 import androidx.compose.ui.platform.ClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 
@@ -12,22 +9,18 @@ import androidx.compose.ui.text.AnnotatedString
  *
  * Área de transferência, e não compartilhamento pela folha do sistema: o número
  * calculado aqui é digitado de volta em algum campo, e colar funciona em
- * qualquer destino — inclusive nos que não aparecem na folha de compartilhar.
+ * qualquer destino — inclusive nos que não aparecem na folha.
  *
  * Nada é gravado em disco e nada sai do aparelho por conta do app; quem decide
  * o destino do texto é quem colar. É o que a política de privacidade promete.
+ *
+ * Quem avisa que a cópia aconteceu é o próprio botão, trocando de texto, e não
+ * um Toast. O aviso do sistema não serve: do Android 13 em diante o AOSP mostra
+ * uma prévia do que foi copiado, mas nem toda ROM mostra — conferido no
+ * HyperOS/Android 16, onde nada aparece. Um Toast resolveria esse caso e
+ * duplicaria o aviso onde a ROM se comporta; o texto do botão é visível nos
+ * dois mundos e não concorre com nenhum deles.
  */
-fun copiarResumo(
-    resumo: String,
-    areaDeTransferencia: ClipboardManager,
-    context: Context
-) {
+fun copiarResumo(resumo: String, areaDeTransferencia: ClipboardManager) {
     areaDeTransferencia.setText(AnnotatedString(resumo))
-
-    // A partir do Android 13 o próprio sistema mostra a confirmação de cópia,
-    // com uma prévia do que foi copiado. Um Toast nosso apareceria junto e o
-    // aviso sairia duplicado — então ele só entra onde o sistema se cala.
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-        Toast.makeText(context, "Resumo copiado", Toast.LENGTH_SHORT).show()
-    }
 }
