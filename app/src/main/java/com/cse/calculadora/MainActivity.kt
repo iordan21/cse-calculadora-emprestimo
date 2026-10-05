@@ -25,6 +25,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -37,6 +38,7 @@ import com.cse.calculadora.ui.abas.AbaEmprestimo
 import com.cse.calculadora.ui.abas.AbaMargem
 import com.cse.calculadora.ui.abas.AbaPortabilidade
 import com.cse.calculadora.ui.componentes.SeletorAbas
+import com.cse.calculadora.ui.copiarResumo
 import com.cse.calculadora.ui.theme.CSETheme
 
 class MainActivity : ComponentActivity() {
@@ -76,6 +78,7 @@ fun CSEApp(viewModel: CseViewModel = viewModel()) {
     val margem by viewModel.margem.collectAsStateWithLifecycle()
     val emprestimo by viewModel.emprestimo.collectAsStateWithLifecycle()
     val contexto = LocalContext.current
+    val areaDeTransferencia = LocalClipboardManager.current
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -105,7 +108,10 @@ fun CSEApp(viewModel: CseViewModel = viewModel()) {
                     aoAlterarParcela = viewModel::alterarParcelaPortabilidade,
                     aoAlterarJuros = viewModel::alterarJurosPortabilidade,
                     aoAlterarQuantoFoi = viewModel::alterarQuantoFoi,
-                    aoAlterarQuantoResta = viewModel::alterarQuantoResta
+                    aoAlterarQuantoResta = viewModel::alterarQuantoResta,
+                    aoCopiar = {
+                        copiarResumo(portabilidade.resumo, areaDeTransferencia, contexto)
+                    }
                 )
 
                 1 -> AbaMargem(
@@ -114,7 +120,8 @@ fun CSEApp(viewModel: CseViewModel = viewModel()) {
                     aoAlterarPercentual = viewModel::alterarPercentualMargem,
                     aoAlterarParcela = viewModel::alterarParcelaComprometida,
                     aoAdicionarParcela = viewModel::adicionarParcela,
-                    aoRemoverParcela = viewModel::removerParcela
+                    aoRemoverParcela = viewModel::removerParcela,
+                    aoCopiar = { copiarResumo(margem.resumo, areaDeTransferencia, contexto) }
                 )
 
                 2 -> AbaEmprestimo(
@@ -124,7 +131,8 @@ fun CSEApp(viewModel: CseViewModel = viewModel()) {
                     aoAlterarPrazo = viewModel::alterarPrazo,
                     aoAlterarJuros = viewModel::alterarJurosEmprestimo,
                     aoAlternarIof = viewModel::alternarIof,
-                    aoUsarMargemSugerida = viewModel::usarMargemSugerida
+                    aoUsarMargemSugerida = viewModel::usarMargemSugerida,
+                    aoCopiar = { copiarResumo(emprestimo.resumo, areaDeTransferencia, contexto) }
                 )
             }
         }

@@ -1,5 +1,6 @@
 package com.cse.calculadora.ui.componentes
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,8 +14,10 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -162,6 +165,46 @@ private fun ValorEmDestaque(valor: String, cor: Color) {
             }
         }
     )
+}
+
+/**
+ * Copia o resultado da aba para a área de transferência.
+ *
+ * Fica abaixo do cartão e fora dele, de propósito. O cartão precisa continuar
+ * curto para não sair da tela com o teclado aberto (ver [CartaoResultado]), e
+ * copiar é a última coisa que se faz no atendimento, não a primeira.
+ *
+ * Mesmo desenho do "Adicionar parcela" da aba Margem — contorno fino, texto
+ * neutro, 52dp de altura. O verde segue reservado ao número do resultado.
+ *
+ * Desabilitado enquanto não há entrada: copiar "R$ —" não serve a ninguém, e
+ * botão apagado diz isso sem precisar de aviso. O contorno precisa ser apagado
+ * à mão, porque o `border` do OutlinedButton é parâmetro e não reage ao
+ * `enabled` sozinho.
+ */
+@Composable
+internal fun BotaoCopiarResumo(
+    aoCopiar: () -> Unit,
+    habilitado: Boolean,
+    modifier: Modifier = Modifier
+) {
+    OutlinedButton(
+        onClick = aoCopiar,
+        enabled = habilitado,
+        shape = MaterialTheme.shapes.small,
+        border = BorderStroke(
+            1.dp,
+            MaterialTheme.colorScheme.outline.copy(alpha = if (habilitado) 1f else 0.4f)
+        ),
+        colors = ButtonDefaults.outlinedButtonColors(
+            contentColor = MaterialTheme.colorScheme.onSurface
+        ),
+        modifier = modifier
+            .fillMaxWidth()
+            .heightIn(min = 52.dp)
+    ) {
+        Text("Copiar resumo", style = MaterialTheme.typography.labelLarge)
+    }
 }
 
 /**

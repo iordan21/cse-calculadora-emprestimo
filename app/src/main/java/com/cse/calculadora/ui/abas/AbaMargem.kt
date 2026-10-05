@@ -28,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.cse.calculadora.CalculadoraUtils
 import com.cse.calculadora.ui.MargemUiState
+import com.cse.calculadora.ui.componentes.BotaoCopiarResumo
 import com.cse.calculadora.ui.componentes.CampoNumerico
 import com.cse.calculadora.ui.componentes.CartaoResultado
 import com.cse.calculadora.ui.componentes.LinhaResumo
@@ -49,7 +50,8 @@ fun AbaMargem(
     aoAlterarPercentual: (String) -> Unit,
     aoAlterarParcela: (Int, String) -> Unit,
     aoAdicionarParcela: () -> Unit,
-    aoRemoverParcela: (Int) -> Unit
+    aoRemoverParcela: (Int) -> Unit,
+    aoCopiar: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -62,11 +64,7 @@ fun AbaMargem(
         val temEntrada = estado.temEntrada
 
         CartaoResultado(
-            rotulo = if (temEntrada && estado.margemEstourada) {
-                "Margem estourada"
-            } else {
-                "Margem real disponível"
-            },
+            rotulo = estado.rotuloResultado,
             valor = if (temEntrada) {
                 CalculadoraUtils.formatarMoeda(estado.margemReal)
             } else {
@@ -91,6 +89,8 @@ fun AbaMargem(
                 }
             )
         }
+
+        BotaoCopiarResumo(aoCopiar = aoCopiar, habilitado = temEntrada)
 
         RotuloSecao(texto = "SALÁRIO E MARGEM", modifier = Modifier.padding(top = 14.dp))
 

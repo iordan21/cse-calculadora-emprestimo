@@ -22,6 +22,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.cse.calculadora.CalculadoraUtils
 import com.cse.calculadora.ui.EmprestimoUiState
+import com.cse.calculadora.ui.componentes.BotaoCopiarResumo
 import com.cse.calculadora.ui.componentes.CampoNumerico
 import com.cse.calculadora.ui.componentes.CartaoResultado
 import com.cse.calculadora.ui.componentes.LinhaResumo
@@ -44,7 +45,8 @@ fun AbaEmprestimo(
     aoAlterarPrazo: (String) -> Unit,
     aoAlterarJuros: (String) -> Unit,
     aoAlternarIof: () -> Unit,
-    aoUsarMargemSugerida: () -> Unit
+    aoUsarMargemSugerida: () -> Unit,
+    aoCopiar: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -57,7 +59,7 @@ fun AbaEmprestimo(
         val temEntrada = estado.temEntrada
 
         CartaoResultado(
-            rotulo = if (estado.iofAtivo) "Valor líquido na conta" else "Valor máximo liberado",
+            rotulo = estado.rotuloResultado,
             valor = if (temEntrada) {
                 CalculadoraUtils.formatarMoeda(estado.valorFinal)
             } else {
@@ -105,6 +107,8 @@ fun AbaEmprestimo(
                 }
             }
         }
+
+        BotaoCopiarResumo(aoCopiar = aoCopiar, habilitado = temEntrada)
 
         RotuloSecao(texto = "SIMULAÇÃO", modifier = Modifier.padding(top = 14.dp))
 
