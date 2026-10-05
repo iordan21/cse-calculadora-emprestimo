@@ -25,8 +25,8 @@ android {
         targetSdk = 36
 
         // Configurações globais de versão do app
-        versionCode = 8
-        versionName = "1.6.0"
+        versionCode = 9
+        versionName = "1.7.0"
 
         vectorDrawables {
             useSupportLibrary = true

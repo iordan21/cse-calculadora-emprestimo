@@ -38,6 +38,9 @@ data class PortabilidadeUiState(
     val saldoDevedor: Double
         get() = CalculadoraUtils.calcularPortabilidade(parcela, quantoResta, juros).saldoDevedor
 
+    /** Título do cartão. Mora aqui para o resumo copiado não repetir a string. */
+    val rotuloResultado: String get() = "Saldo devedor estimado"
+
     /**
      * Sem os campos que sustentam a conta, não existe saldo devedor — existe
      * campo vazio. A tela mostra um traço em vez de "R$ 0,00", porque zero é
@@ -48,6 +51,25 @@ data class PortabilidadeUiState(
      */
     val temEntrada: Boolean
         get() = parcelaTexto.isNotBlank() && quantoRestaTexto.isNotBlank()
+
+    /**
+     * O cálculo em texto, para colar fora do app.
+     *
+     * Mesma ordem e mesmos rótulos do cartão, porque quem cola já leu a tela e
+     * vai conferir um contra o outro. A linha de juros só entra se houver juros
+     * digitado, pelo mesmo motivo de [temEntrada] não exigir esse campo.
+     */
+    val resumo: String
+        get() = buildList {
+            add("$rotuloResultado: ${CalculadoraUtils.formatarMoeda(saldoDevedor)}")
+            add("")
+            add("Parcela: ${CalculadoraUtils.formatarMoeda(parcela)}")
+            if (jurosTexto.isNotBlank()) add("Juros: $jurosTexto% a.m.")
+            add("Parcelas pagas: $quantoFoi de $prazoOriginal")
+            add("Parcelas restantes: $quantoResta")
+            add("Total já pago: ${CalculadoraUtils.formatarMoeda(totalJaPago)}")
+            add("Término estimado: $terminoEstimado")
+        }.joinToString("\n")
 }
 
 /**
@@ -75,6 +97,24 @@ data class MargemUiState(
 
     /** Sem salário não há margem: nem bruta, nem estourada. Ver [PortabilidadeUiState.temEntrada]. */
     val temEntrada: Boolean get() = salarioTexto.isNotBlank()
+
+    /**
+     * Título do cartão: muda quando a margem fica negativa, porque aí o número
+     * grande não é mais uma disponibilidade, é um estouro.
+     */
+    val rotuloResultado: String
+        get() = if (temEntrada && margemEstourada) "Margem estourada" else "Margem real disponível"
+
+    /** Ver [PortabilidadeUiState.resumo]. */
+    val resumo: String
+        get() = buildList {
+            add("$rotuloResultado: ${CalculadoraUtils.formatarMoeda(margemReal)}")
+            add("")
+            add("Salário bruto: ${CalculadoraUtils.formatarMoeda(salarioBruto)}")
+            add("Margem: $margemTexto%")
+            add("Margem bruta: ${CalculadoraUtils.formatarMoeda(margemBruta)}")
+            add("Já comprometido: - ${CalculadoraUtils.formatarMoeda(parcelaComprometida)}")
+        }.joinToString("\n")
 }
 
 /**
@@ -119,6 +159,13 @@ data class EmprestimoUiState(
         get() = "${prazoMeses}x de ${CalculadoraUtils.formatarMoeda(parcela)}"
 
     /**
+     * Título do cartão: com o IOF descontado, o número de cima deixa de ser o
+     * teto financiável e passa a ser o dinheiro que cai na conta.
+     */
+    val rotuloResultado: String
+        get() = if (iofAtivo) "Valor líquido na conta" else "Valor máximo liberado"
+
+    /**
      * CET sobre o que de fato cai na conta, em taxa mensal e anual.
      *
      * Com o IOF descontado, o dinheiro que entra é menor que o principal, mas as
@@ -133,4 +180,28 @@ data class EmprestimoUiState(
             return "${CalculadoraUtils.formatarPercentual(mensal)} a.m. · " +
                 "${CalculadoraUtils.formatarPercentual(anual)} a.a."
         }
+
+    /**
+     * Ver [PortabilidadeUiState.resumo]. As linhas de IOF e CET só entram com o
+     * desconto ligado, pelo mesmo motivo que o cartão as esconde: sem desconto,
+     * o bruto e o valor de cima são o mesmo número.
+     */
+    val resumo: String
+        get() = buildList {
+            add("$rotuloResultado: ${CalculadoraUtils.formatarMoeda(valorFinal)}")
+            add("")
+            add("Parcelas: $parcelamento")
+            if (jurosTexto.isNotBlank()) add("Juros: $jurosTexto% a.m.")
+            if (iofAtivo) {
+                add(
+                    "Valor bruto financiável: " +
+                        CalculadoraUtils.formatarMoeda(valorBrutoFinanciavel)
+                )
+                add(
+                    "IOF estimado ($aliquotaIofEfetiva): - " +
+                        CalculadoraUtils.formatarMoeda(descontoIof)
+                )
+                if (cetTexto.isNotEmpty()) add("CET (juros + IOF): $cetTexto")
+            }
+        }.joinToString("\n")
 }

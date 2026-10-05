@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.cse.calculadora.CalculadoraUtils
 import com.cse.calculadora.ui.PortabilidadeUiState
+import com.cse.calculadora.ui.componentes.BotaoCopiarResumo
 import com.cse.calculadora.ui.componentes.CampoNumerico
 import com.cse.calculadora.ui.componentes.CartaoResultado
 import com.cse.calculadora.ui.componentes.LinhaResumo
@@ -31,7 +32,8 @@ fun AbaPortabilidade(
     aoAlterarParcela: (String) -> Unit,
     aoAlterarJuros: (String) -> Unit,
     aoAlterarQuantoFoi: (String) -> Unit,
-    aoAlterarQuantoResta: (String) -> Unit
+    aoAlterarQuantoResta: (String) -> Unit,
+    aoCopiar: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -44,7 +46,7 @@ fun AbaPortabilidade(
         val temEntrada = estado.temEntrada
 
         CartaoResultado(
-            rotulo = "Saldo devedor estimado",
+            rotulo = estado.rotuloResultado,
             valor = if (temEntrada) {
                 CalculadoraUtils.formatarMoeda(estado.saldoDevedor)
             } else {
@@ -73,6 +75,8 @@ fun AbaPortabilidade(
                 if (temEntrada) estado.terminoEstimado else SEM_VALOR
             )
         }
+
+        BotaoCopiarResumo(aoCopiar = aoCopiar, habilitado = temEntrada)
 
         RotuloSecao(texto = "CONTRATO ATUAL", modifier = Modifier.padding(top = 14.dp))
 

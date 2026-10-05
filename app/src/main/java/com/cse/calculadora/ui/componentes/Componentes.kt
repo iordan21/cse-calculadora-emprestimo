@@ -1,5 +1,6 @@
 package com.cse.calculadora.ui.componentes
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,13 +14,16 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -33,6 +37,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
 
 /**
  * Peças de interface repetidas pelas três abas.
@@ -163,6 +168,73 @@ private fun ValorEmDestaque(valor: String, cor: Color) {
         }
     )
 }
+
+/**
+ * Copia o resultado da aba para a área de transferência.
+ *
+ * Fica abaixo do cartão e fora dele, de propósito. O cartão precisa continuar
+ * curto para não sair da tela com o teclado aberto (ver [CartaoResultado]), e
+ * copiar é a última coisa que se faz no atendimento, não a primeira.
+ *
+ * Mesmo desenho do "Adicionar parcela" da aba Margem — contorno fino, texto
+ * neutro, 52dp de altura. O verde segue reservado ao número do resultado.
+ *
+ * Desabilitado enquanto não há entrada: copiar "R$ —" não serve a ninguém, e
+ * botão apagado diz isso sem precisar de aviso. O contorno precisa ser apagado
+ * à mão, porque o `border` do OutlinedButton é parâmetro e não reage ao
+ * `enabled` sozinho.
+ *
+ * O próprio botão confirma a cópia, trocando de texto por [ESPERA_CONFIRMACAO].
+ * É o único aviso que funciona em qualquer aparelho: do Android 13 em diante o
+ * AOSP mostra uma prévia do que foi copiado, mas nem toda ROM mostra — no
+ * HyperOS/Android 16 não aparece nada, e um botão que não responde ao toque
+ * parece quebrado.
+ */
+@Composable
+internal fun BotaoCopiarResumo(
+    aoCopiar: () -> Unit,
+    habilitado: Boolean,
+    modifier: Modifier = Modifier
+) {
+    var confirmando by remember { mutableStateOf(false) }
+
+    // Volta ao texto normal sozinho. A chave é `confirmando`, então tocar de
+    // novo durante a confirmação não reinicia a espera — o botão não fica preso
+    // em "copiado" enquanto alguém insiste no toque.
+    LaunchedEffect(confirmando) {
+        if (confirmando) {
+            delay(ESPERA_CONFIRMACAO)
+            confirmando = false
+        }
+    }
+
+    OutlinedButton(
+        onClick = {
+            aoCopiar()
+            confirmando = true
+        },
+        enabled = habilitado,
+        shape = MaterialTheme.shapes.small,
+        border = BorderStroke(
+            1.dp,
+            MaterialTheme.colorScheme.outline.copy(alpha = if (habilitado) 1f else 0.4f)
+        ),
+        colors = ButtonDefaults.outlinedButtonColors(
+            contentColor = MaterialTheme.colorScheme.onSurface
+        ),
+        modifier = modifier
+            .fillMaxWidth()
+            .heightIn(min = 52.dp)
+    ) {
+        Text(
+            text = if (confirmando) "Resumo copiado" else "Copiar resumo",
+            style = MaterialTheme.typography.labelLarge
+        )
+    }
+}
+
+/** Quanto tempo o botão fica dizendo que copiou. */
+private const val ESPERA_CONFIRMACAO = 1_800L
 
 /**
  * Título de bloco de campos.
