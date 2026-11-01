@@ -57,11 +57,25 @@ class CseViewModel(private val estadoSalvo: SavedStateHandle) : ViewModel() {
         it.copy(salarioTexto = CalculadoraUtils.sanitizarEntradaNumerica(texto))
     }
 
+    /**
+     * Margem é fatia do salário: passar de 100% não é margem, é erro de
+     * digitação, e a tela mostraria uma margem maior que o próprio salário.
+     * O campo trava em "100" em vez de recusar a tecla, para a pessoa ver
+     * onde parou.
+     */
     fun alterarPercentualMargem(texto: String) = atualizarMargem {
-        it.copy(margemTexto = CalculadoraUtils.sanitizarEntradaNumerica(texto))
+        val limpo = CalculadoraUtils.sanitizarEntradaNumerica(texto)
+        val percentual = CalculadoraUtils.parseValorDigitado(limpo)
+        it.copy(margemTexto = if (percentual > MARGEM_MAXIMA) "100" else limpo)
     }
 
+    /**
+     * O índice vem de uma lambda capturada na composição. Se a linha foi
+     * removida e um evento do teclado ainda chega para ela, o índice já não
+     * existe — e `it[indice]` derrubava o app. Evento atrasado é descartado.
+     */
     fun alterarParcelaComprometida(indice: Int, texto: String) = atualizarMargem { estado ->
+        if (indice !in estado.parcelasTexto.indices) return@atualizarMargem estado
         val atualizadas = estado.parcelasTexto.toMutableList().also {
             it[indice] = CalculadoraUtils.sanitizarEntradaNumerica(texto)
         }
@@ -72,7 +86,9 @@ class CseViewModel(private val estadoSalvo: SavedStateHandle) : ViewModel() {
         it.copy(parcelasTexto = it.parcelasTexto + "")
     }
 
+    /** A lista nunca fica vazia: a tela sempre mostra ao menos uma linha. */
     fun removerParcela(indice: Int) = atualizarMargem { estado ->
+        if (!estado.podeRemoverParcela) return@atualizarMargem estado
         estado.copy(parcelasTexto = estado.parcelasTexto.filterIndexed { i, _ -> i != indice })
     }
 
@@ -131,6 +147,7 @@ class CseViewModel(private val estadoSalvo: SavedStateHandle) : ViewModel() {
 
     private companion object {
         const val MAX_DIGITOS_MESES = 3
+        const val MARGEM_MAXIMA = 100.0
 
         const val CHAVE_ABA = "aba_selecionada"
         const val CHAVE_PORTABILIDADE = "estado_portabilidade"

@@ -132,7 +132,8 @@ fun AbaEmprestimo(
         CampoNumerico(
             valor = estado.jurosTexto,
             aoAlterar = aoAlterarJuros,
-            rotulo = "Juros a.m. (%)"
+            rotulo = "Juros a.m. (%)",
+            aviso = estado.avisoJuros
         )
 
         ChaveIof(ativo = estado.iofAtivo, aoAlternar = aoAlternarIof)

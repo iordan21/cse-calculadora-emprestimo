@@ -46,6 +46,25 @@ object CalculadoraUtils {
     /** Dias corridos até o vencimento de cada parcela. Mês comercial de 30 dias. */
     private const val DIAS_POR_MES = 30
 
+    /** 100.000% a.m. Daqui para cima não é contrato, é campo digitado errado. */
+    private const val CET_TETO_DE_BUSCA = 1_000.0
+
+    /**
+     * Dígitos antes da vírgula nos campos de valor: até R$ 999.999.999.
+     *
+     * Sem limite, um número colado no campo estourava o cartão e, perto de 300
+     * dígitos, o Double virava infinito — a tela mostrava "R$ ∞", e com o IOF
+     * ligado, infinito menos infinito, "R$ NaN".
+     */
+    private const val MAX_DIGITOS_INTEIROS = 9
+
+    /**
+     * Acima disso o juros mensal digitado é quase certamente uma vírgula
+     * esquecida — consignado cobra uma fração disso. É aviso, não bloqueio:
+     * a conta continua sendo feita com o número que está no campo.
+     */
+    const val JUROS_MENSAL_PLAUSIVEL = 10.0
+
     // forLanguageTag no lugar de Locale("pt","BR"): o construtor está depreciado
     // desde o Java 19 e sai com aviso a cada build.
     private val localePtBr: Locale = Locale.forLanguageTag("pt-BR")
@@ -111,7 +130,15 @@ object CalculadoraUtils {
         if (valorLiberado >= parcela * prazo) return 0.0
 
         var minima = 0.0
-        var maxima = 1.0 // 100% a.m. — teto de busca, não de contrato
+        // O teto da busca começa em 100% a.m. e dobra enquanto a raiz ainda
+        // estiver acima dele. Teto fixo devolvia "100,00% a.m." calado para
+        // quem digitou 189 querendo 1,89 — número errado com cara de certo.
+        var maxima = 1.0
+        while (valorPresente(parcela, prazo, maxima * 100.0) > valorLiberado &&
+            maxima < CET_TETO_DE_BUSCA
+        ) {
+            maxima *= 2
+        }
         repeat(80) {
             val meio = (minima + maxima) / 2
             // valorPresente cai quando a taxa sobe, então a raiz está à direita
@@ -173,13 +200,21 @@ object CalculadoraUtils {
      * O ponto é aceito como separador decimal e convertido em vírgula. Quem
      * digita num teclado de layout en-US escreve "1.89", e descartar o ponto
      * transformaria a taxa em 189% sem aviso nenhum na tela.
+     *
+     * A parte inteira para em [MAX_DIGITOS_INTEIROS]; os decimais não têm
+     * limite, porque juros como "1,8945" são legítimos e não estouram nada.
      */
     fun sanitizarEntradaNumerica(texto: String): String {
         val resultado = StringBuilder()
         var separadorUsado = false
+        var digitosInteiros = 0
         for (c in texto) {
             when {
-                c.isDigit() -> resultado.append(c)
+                c.isDigit() && separadorUsado -> resultado.append(c)
+                c.isDigit() && digitosInteiros < MAX_DIGITOS_INTEIROS -> {
+                    resultado.append(c)
+                    digitosInteiros++
+                }
                 (c == ',' || c == '.') && !separadorUsado -> {
                     resultado.append(',')
                     separadorUsado = true
@@ -188,6 +223,12 @@ object CalculadoraUtils {
         }
         return resultado.toString()
     }
+
+    /**
+     * Texto digitado como vai no resumo: sem a vírgula solta do fim, que fica
+     * no campo enquanto a pessoa ainda vai digitar o decimal ("1," → "1").
+     */
+    fun textoParaResumo(texto: String): String = texto.trimEnd(',')
 
     /** Formata um Double calculado de volta pra texto editável (vírgula decimal, sem separador de milhar). */
     fun formatarParaEdicao(valor: Double): String {

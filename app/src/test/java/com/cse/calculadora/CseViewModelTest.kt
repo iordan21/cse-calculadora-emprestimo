@@ -4,6 +4,8 @@ import androidx.lifecycle.SavedStateHandle
 import com.cse.calculadora.ui.CseViewModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -171,5 +173,45 @@ class CseViewModelTest {
 
         viewModel.removerParcela(indice = 0)
         assertFalse(viewModel.margem.value.podeRemoverParcela)
+    }
+
+    @Test
+    fun `evento atrasado de uma parcela ja removida nao derruba o app`() {
+        val viewModel = CseViewModel(SavedStateHandle())
+
+        viewModel.adicionarParcela()
+        viewModel.removerParcela(indice = 1)
+
+        // A linha 1 não existe mais; antes, isto era IndexOutOfBoundsException.
+        viewModel.alterarParcelaComprometida(indice = 1, texto = "250")
+        viewModel.removerParcela(indice = 5)
+
+        assertEquals(listOf(""), viewModel.margem.value.parcelasTexto)
+    }
+
+    @Test
+    fun `margem acima de 100 por cento trava em 100`() {
+        val viewModel = CseViewModel(SavedStateHandle())
+
+        viewModel.alterarPercentualMargem("350")
+        assertEquals("100", viewModel.margem.value.margemTexto)
+
+        viewModel.alterarPercentualMargem("45,5")
+        assertEquals("45,5", viewModel.margem.value.margemTexto)
+    }
+
+    @Test
+    fun `juros acima de 10 por cento ao mes ganha aviso, abaixo nao`() {
+        val viewModel = CseViewModel(SavedStateHandle())
+
+        viewModel.alterarJurosPortabilidade("189")
+        viewModel.alterarJurosEmprestimo("189")
+        assertNotNull(viewModel.portabilidade.value.avisoJuros)
+        assertNotNull(viewModel.emprestimo.value.avisoJuros)
+
+        viewModel.alterarJurosPortabilidade("1,89")
+        viewModel.alterarJurosEmprestimo("10")
+        assertNull(viewModel.portabilidade.value.avisoJuros)
+        assertNull(viewModel.emprestimo.value.avisoJuros)
     }
 }

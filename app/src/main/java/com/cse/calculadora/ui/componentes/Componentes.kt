@@ -61,18 +61,26 @@ internal const val SEM_VALOR = "—"
  */
 internal const val SEM_VALOR_MOEDA = "R\$ —"
 
-/** Campo de entrada numérica com teclado decimal e uma única linha. */
+/**
+ * Campo de entrada numérica com teclado decimal e uma única linha.
+ *
+ * Com [aviso], o campo entra em estado de erro e mostra o texto embaixo. É
+ * só sinal: o valor continua aceito e a conta continua sendo feita.
+ */
 @Composable
 internal fun CampoNumerico(
     valor: String,
     aoAlterar: (String) -> Unit,
     rotulo: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    aviso: String? = null
 ) {
     TextField(
         value = valor,
         onValueChange = aoAlterar,
         label = { Text(rotulo) },
+        isError = aviso != null,
+        supportingText = aviso?.let { texto -> { Text(texto) } },
         singleLine = true,
         shape = MaterialTheme.shapes.small,
         textStyle = MaterialTheme.typography.titleMedium,
