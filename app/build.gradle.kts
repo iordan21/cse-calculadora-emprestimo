@@ -25,8 +25,8 @@ android {
         targetSdk = 36
 
         // Configurações globais de versão do app
-        versionCode = 9
-        versionName = "1.7.0"
+        versionCode = 10
+        versionName = "1.8.0"
 
         vectorDrawables {
             useSupportLibrary = true
@@ -58,9 +58,12 @@ android {
         }
     }
 
+    // Java 11, não 1.8: as AndroidX atuais são compiladas para JVM 11, e o
+    // Kotlin recusa embutir função inline de bytecode 11 num build 1.8
+    // ("Cannot inline bytecode built with JVM target 11"). Não muda o minSdk.
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
     }
 
     buildFeatures {
@@ -75,32 +78,42 @@ android {
 }
 
 dependencies {
-    implementation("androidx.core:core-ktx:1.13.1")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.4")
-    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.4")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.4")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-savedstate:2.8.4")
-    implementation("androidx.activity:activity-compose:1.9.1")
+    // core-ktx 1.18.0 e lifecycle 2.10.0 são o teto com compileSdk 36, medido em
+    // nov/2026: core 1.19 e os artefatos Compose da lifecycle 2.11 exigem 37 no
+    // metadata do AAR, e o checkAarMetadata recusa o build. Sobem junto com o
+    // compileSdk, depois de instalar a plataforma android-37.
+    implementation("androidx.core:core-ktx:1.18.0")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.10.0")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.10.0")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.10.0")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-savedstate:2.10.0")
+    implementation("androidx.activity:activity-compose:1.13.0")
 
-    // BOM travado em 2024.09.03 (Compose UI 1.7.3) por necessidade, não por gosto.
-    // O collectAsStateWithLifecycle da lifecycle 2.8.4 lê o CompositionLocal
-    // androidx.lifecycle.compose.LocalLifecycleOwner, e quem fornece esse local é
-    // o Compose UI a partir da 1.7. Com o BOM 2024.06.00 (UI 1.6.8) o app subia em
-    // debug e morria no release, no primeiro frame, com "CompositionLocal
-    // LocalLifecycleOwner not present". Se descer o BOM, desça a lifecycle junto.
-    implementation(platform("androidx.compose:compose-bom:2024.09.03"))
+    // BOM 2026.06.01 (Compose UI 1.11.4) é o último que fecha com compileSdk 36: do
+    // 2026.08.00 em diante vem o Compose 1.12, que exige 37. Mesma regra das linhas
+    // de cima — sobe junto com o compileSdk.
+    //
+    // Lifecycle e Compose UI andam casados. O collectAsStateWithLifecycle lê o
+    // CompositionLocal LocalLifecycleOwner, que só o Compose UI 1.7+ fornece. Com o
+    // BOM 2024.06.00 (UI 1.6.8) o app subia em debug e morria no release, no
+    // primeiro frame, com "CompositionLocal LocalLifecycleOwner not present". Se
+    // descer o BOM, desça a lifecycle junto.
+    implementation(platform("androidx.compose:compose-bom:2026.06.01"))
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
-    // Só Add, Close e Star são usados, e os três estão no core que o Material3
-    // já traz.
+    // Só Add, Close e Star são usados, todos do core. Nas versões de 2024 o
+    // material-icons-core vinha de graça pela transitiva do Material3; nas atuais
+    // não vem mais, e sem a linha abaixo o import de Icons nem resolve. 1.7.8 é a
+    // última publicada (a lib foi congelada), por isso versão fixa e fora do BOM.
     // O -extended empacota ~1.500 vetores; no release o R8 corta, no debug não.
+    implementation("androidx.compose.material:material-icons-core:1.7.8")
 
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
-    androidTestImplementation(platform("androidx.compose:compose-bom:2024.09.03"))
+    androidTestImplementation(platform("androidx.compose:compose-bom:2026.06.01"))
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
