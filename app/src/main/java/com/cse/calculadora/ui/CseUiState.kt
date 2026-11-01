@@ -4,6 +4,17 @@ import com.cse.calculadora.CalculadoraUtils
 import java.io.Serializable
 
 /**
+ * O aviso não tenta adivinhar o número certo: 189 é quase sempre 1,89, mas 15
+ * tanto pode ser 1,5 quanto 0,15. Um exemplo fixo mostra o engano sem chutar.
+ */
+private fun avisoDeJuros(jurosMensal: Double): String? =
+    if (jurosMensal > CalculadoraUtils.JUROS_MENSAL_PLAUSIVEL) {
+        "Acima de 10% ao mês. Confere a vírgula: 1,89 e não 189."
+    } else {
+        null
+    }
+
+/**
  * Estado da aba Portabilidade: os campos digitados e os valores derivados deles.
  *
  * Os campos são guardados como texto (é o que o usuário digita) e os resultados
@@ -41,6 +52,9 @@ data class PortabilidadeUiState(
     /** Título do cartão. Mora aqui para o resumo copiado não repetir a string. */
     val rotuloResultado: String get() = "Saldo devedor estimado"
 
+    /** Aviso embaixo do campo de juros quando o número não parece taxa mensal. */
+    val avisoJuros: String? get() = avisoDeJuros(juros)
+
     /**
      * Sem os campos que sustentam a conta, não existe saldo devedor — existe
      * campo vazio. A tela mostra um traço em vez de "R$ 0,00", porque zero é
@@ -64,7 +78,9 @@ data class PortabilidadeUiState(
             add("$rotuloResultado: ${CalculadoraUtils.formatarMoeda(saldoDevedor)}")
             add("")
             add("Parcela: ${CalculadoraUtils.formatarMoeda(parcela)}")
-            if (jurosTexto.isNotBlank()) add("Juros: $jurosTexto% a.m.")
+            if (jurosTexto.isNotBlank()) {
+                add("Juros: ${CalculadoraUtils.textoParaResumo(jurosTexto)}% a.m.")
+            }
             add("Parcelas pagas: $quantoFoi de $prazoOriginal")
             add("Parcelas restantes: $quantoResta")
             add("Total já pago: ${CalculadoraUtils.formatarMoeda(totalJaPago)}")
@@ -111,7 +127,7 @@ data class MargemUiState(
             add("$rotuloResultado: ${CalculadoraUtils.formatarMoeda(margemReal)}")
             add("")
             add("Salário bruto: ${CalculadoraUtils.formatarMoeda(salarioBruto)}")
-            add("Margem: $margemTexto%")
+            add("Margem: ${CalculadoraUtils.textoParaResumo(margemTexto)}%")
             add("Margem bruta: ${CalculadoraUtils.formatarMoeda(margemBruta)}")
             add("Já comprometido: - ${CalculadoraUtils.formatarMoeda(parcelaComprometida)}")
         }.joinToString("\n")
@@ -133,6 +149,9 @@ data class EmprestimoUiState(
 
     val valorBrutoFinanciavel: Double
         get() = CalculadoraUtils.valorPresente(parcela, prazoMeses, juros)
+
+    /** Ver [PortabilidadeUiState.avisoJuros]. */
+    val avisoJuros: String? get() = avisoDeJuros(juros)
 
     val descontoIof: Double
         get() = CalculadoraUtils.calcularIof(parcela, prazoMeses, juros)
@@ -191,7 +210,9 @@ data class EmprestimoUiState(
             add("$rotuloResultado: ${CalculadoraUtils.formatarMoeda(valorFinal)}")
             add("")
             add("Parcelas: $parcelamento")
-            if (jurosTexto.isNotBlank()) add("Juros: $jurosTexto% a.m.")
+            if (jurosTexto.isNotBlank()) {
+                add("Juros: ${CalculadoraUtils.textoParaResumo(jurosTexto)}% a.m.")
+            }
             if (iofAtivo) {
                 add(
                     "Valor bruto financiável: " +

@@ -88,7 +88,8 @@ fun AbaPortabilidade(
         CampoNumerico(
             valor = estado.jurosTexto,
             aoAlterar = aoAlterarJuros,
-            rotulo = "Juros a.m. (%)"
+            rotulo = "Juros a.m. (%)",
+            aviso = estado.avisoJuros
         )
         CampoNumerico(
             valor = estado.quantoFoiTexto,

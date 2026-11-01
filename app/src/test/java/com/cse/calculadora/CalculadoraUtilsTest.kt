@@ -142,6 +142,31 @@ class CalculadoraUtilsTest {
     }
 
     @Test
+    fun `parte inteira para em nove digitos e os decimais seguem`() {
+        // Colado de qualquer lugar: 400 dígitos viravam Double infinito.
+        val colado = CalculadoraUtils.sanitizarEntradaNumerica("9".repeat(400) + ",1234")
+
+        assertEquals("999999999,1234", colado)
+        assertTrue(CalculadoraUtils.parseValorDigitado(colado).isFinite())
+    }
+
+    @Test
+    fun `CET acima de 100 por cento ao mes nao fica preso no teto`() {
+        // Juros de 189% a.m. (vírgula esquecida em 1,89): antes o CET saía
+        // "100,00% a.m.", o teto da busca, e parecia um número de verdade.
+        val liberado = CalculadoraUtils.valorPresente(500.0, 84, 189.0)
+        val cet = CalculadoraUtils.calcularCetMensal(500.0, 84, liberado)
+
+        assertEquals(1.89, cet, 0.0001)
+    }
+
+    @Test
+    fun `resumo nao leva a virgula solta do fim`() {
+        assertEquals("1", CalculadoraUtils.textoParaResumo("1,"))
+        assertEquals("1,89", CalculadoraUtils.textoParaResumo("1,89"))
+    }
+
+    @Test
     fun `formatar para edicao usa virgula e duas casas`() {
         assertEquals("1500,00", CalculadoraUtils.formatarParaEdicao(1_500.0))
         assertEquals("1234,57", CalculadoraUtils.formatarParaEdicao(1_234.567))
