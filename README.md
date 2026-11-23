@@ -66,3 +66,8 @@ parcela, o IOF do decreto (teto de 365 dias e adicional) e estado preservado ent
 ```
 
 O build de release usa R8 (`isMinifyEnabled = true`) e `shrinkResources` para reduzir o tamanho final do APK/AAB.
+
+## Licença
+
+© 2026 Iordan Santos Silva Filho. Todos os direitos reservados.
+O código está público para leitura e estudo; ele não pode ser copiado nem republicado como outro app.
