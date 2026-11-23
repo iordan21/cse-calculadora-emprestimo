@@ -2,6 +2,12 @@
 
 App Android nativo (Kotlin + Jetpack Compose) para simular portabilidade de empréstimo consignado, calcular margem consignável disponível e simular a tomada de um novo empréstimo.
 
+**[Baixar na Google Play](https://play.google.com/store/apps/details?id=com.cse.calculadora)**
+
+| Portabilidade | Margem | Empréstimo |
+|---|---|---|
+| <img src="docs/imagens/portabilidade.png" width="250" alt="Saldo devedor estimado de um contrato"> | <img src="docs/imagens/margem.png" width="250" alt="Margem consignável disponível"> | <img src="docs/imagens/emprestimo.png" width="250" alt="Valor líquido com IOF e CET"> |
+
 ## Funcionalidades
 
 **Portabilidade** — estima o saldo devedor de um contrato existente a valor presente, pra avaliar se vale a pena portar o empréstimo.
@@ -54,7 +60,7 @@ O app segue MVVM em três camadas bem separadas:
 ./gradlew test
 ```
 
-34 testes de JVM cobrindo a fórmula da Tabela Price, o parsing de moeda em pt-BR, a
+48 testes de JVM cobrindo a fórmula da Tabela Price, o parsing de moeda em pt-BR, a
 sanitização da digitação (inclusive o ponto digitado como separador decimal), o limite
 de dígitos dos campos de meses e o comportamento das abas (margem estourada, sugestão de
 parcela, o IOF do decreto (teto de 365 dias e adicional) e estado preservado entre abas).
